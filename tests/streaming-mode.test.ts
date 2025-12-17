@@ -30,7 +30,7 @@ async function isValidMp4(filePath: string): Promise<{ valid: boolean; size: num
 
 test.describe('Streaming Mode Tests', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:3000');
+    await page.goto('http://localhost:4444');
 
     // Wait for the app to be ready
     await page.waitForSelector('h1:has-text("Media Converter")', { timeout: 10000 });

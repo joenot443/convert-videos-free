@@ -174,7 +174,7 @@ export class ConversionQueueManager {
           },
           onError: (error) => {
             console.error('Conversion error:', error);
-            const errorMessage = typeof error === 'string' ? error : error.message || 'Unknown error';
+            const errorMessage = error || 'Unknown error';
             this.store.updateFileStatus(item.id, 'failed', errorMessage);
 
             // Track conversion failure

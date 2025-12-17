@@ -173,10 +173,10 @@ export default function TestPage() {
     });
     const file = VideoGenerator.blobToFile(videoBlob, 'test_cancel.webm');
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       let canceled = false;
 
-      const jobId = conversionServiceRef.current!.convertFile(
+      const jobId = await conversionServiceRef.current!.convertFile(
         file,
         { preset: 'high' },
         {

@@ -25,7 +25,7 @@ export default function TestStreamingPage() {
 
       // Test 1: Create a simple file
       addLog('Test 1: Creating simple text file...');
-      const textHandle = await window.showSaveFilePicker({
+      const textHandle = await (window as any).showSaveFilePicker({
         suggestedName: 'test-streaming.txt',
         types: [{
           description: 'Text file',
@@ -42,7 +42,7 @@ export default function TestStreamingPage() {
 
       // Test 2: Create a binary file with chunks
       addLog('Test 2: Creating binary file with multiple chunks...');
-      const binaryHandle = await window.showSaveFilePicker({
+      const binaryHandle = await (window as any).showSaveFilePicker({
         suggestedName: 'test-binary.bin',
         types: [{
           description: 'Binary file',
@@ -66,7 +66,7 @@ export default function TestStreamingPage() {
 
       // Test 3: Test with video-like data
       addLog('Test 3: Testing with MP4-like header...');
-      const mp4Handle = await window.showSaveFilePicker({
+      const mp4Handle = await (window as any).showSaveFilePicker({
         suggestedName: 'test-video.mp4',
         types: [{
           description: 'MP4 Video',
@@ -143,7 +143,7 @@ export default function TestStreamingPage() {
       addLog('✓ Created test worker');
 
       // Get file handle
-      const handle = await window.showSaveFilePicker({
+      const handle = await (window as any).showSaveFilePicker({
         suggestedName: 'worker-stream-test.bin',
         types: [{
           description: 'Binary file',
