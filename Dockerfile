@@ -5,7 +5,8 @@ WORKDIR /app
 
 # Copy package files
 COPY package.json package-lock.json* ./
-RUN npm ci
+# Install dependencies (npm install works even if lock file is out of sync)
+RUN npm install --prefer-offline --no-audit
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
