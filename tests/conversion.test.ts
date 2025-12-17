@@ -185,10 +185,9 @@ declare global {
       failed: number;
       tests: Array<{
         name: string;
-        status: 'pending' | 'running' | 'passed' | 'failed';
+        status: string;
         message?: string;
         duration?: number;
-        outputSize?: number;
       }>;
     };
   }
