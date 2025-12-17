@@ -1,6 +1,7 @@
 import { ConversionService } from './ConversionService';
 import { useConverterStore } from '../store/useConverterStore';
 import { QueueItem, ConversionSettings, QualityPreset } from '../store/types';
+import { trackConversion } from '../analytics';
 
 export interface QueueManagerOptions {
   onQueueComplete?: () => void;
@@ -136,6 +137,9 @@ export class ConversionQueueManager {
     this.store.setCurrentJob(item.id);
     this.store.updateFileStatus(item.id, 'processing');
 
+    // Track conversion started
+    trackConversion.started(item.file.name, item.file.size);
+
     try {
       // Get settings (merge global with file-specific overrides)
       const fileSettings = this.store.fileOverrides.get(item.id);
@@ -173,6 +177,9 @@ export class ConversionQueueManager {
             const errorMessage = typeof error === 'string' ? error : error.message || 'Unknown error';
             this.store.updateFileStatus(item.id, 'failed', errorMessage);
 
+            // Track conversion failure
+            trackConversion.failed(item.file.name, errorMessage);
+
             // Clear current job state
             this.currentJobId = null;
             this.currentJob = null;
@@ -198,6 +205,11 @@ export class ConversionQueueManager {
             if (result.mode === 'buffer' && result.buffer) {
               const blob = new Blob([result.buffer], { type: result.mime });
               this.store.completeFile(item.id, blob, result.buffer.byteLength);
+
+              // Track conversion completion
+              const processingTime = item.startedAt ? (Date.now() - item.startedAt.getTime()) / 1000 : 0;
+              trackConversion.completed(item.file.name, processingTime);
+
               if (this.options.onItemComplete) {
                 this.options.onItemComplete(item);
               }

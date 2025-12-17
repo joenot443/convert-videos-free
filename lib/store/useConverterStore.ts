@@ -10,6 +10,7 @@ import {
   QualityPreset,
   ResolutionCap,
 } from './types';
+import { trackConversion, trackUI } from '../analytics';
 
 interface ConverterStore {
   // Queue State

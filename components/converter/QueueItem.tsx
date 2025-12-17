@@ -4,6 +4,17 @@ import { useState } from 'react';
 import { QueueItem as QueueItemType, ConversionSettings } from '@/lib/store/types';
 import { useConverterStore } from '@/lib/store/useConverterStore';
 import { clsx } from 'clsx';
+import {
+  Play,
+  CheckCircle,
+  XCircle,
+  StopCircle,
+  Clock,
+  RefreshCw,
+  Settings,
+  X,
+  Loader2
+} from 'lucide-react';
 
 interface QueueItemProps {
   item: QueueItemType;
@@ -40,17 +51,17 @@ export function QueueItem({ item }: QueueItemProps) {
   const getStatusIcon = () => {
     switch (item.status) {
       case 'pending':
-        return '⏸️';
+        return <Clock className="w-5 h-5 text-gray-400" />;
       case 'processing':
-        return '▶️';
+        return <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />;
       case 'completed':
-        return '✅';
+        return <CheckCircle className="w-5 h-5 text-green-500" />;
       case 'failed':
-        return '❌';
+        return <XCircle className="w-5 h-5 text-red-500" />;
       case 'cancelled':
-        return '⏹️';
+        return <StopCircle className="w-5 h-5 text-gray-500" />;
       default:
-        return '⏸️';
+        return <Clock className="w-5 h-5 text-gray-400" />;
     }
   };
 
@@ -61,7 +72,7 @@ export function QueueItem({ item }: QueueItemProps) {
       case 'processing':
         return progressInfo ? `Processing ${progressInfo.percent.toFixed(0)}%` : 'Processing';
       case 'completed':
-        return '✓ Complete';
+        return 'Complete';
       case 'failed':
         return 'Failed';
       case 'cancelled':
@@ -85,17 +96,17 @@ export function QueueItem({ item }: QueueItemProps) {
       <div
         data-testid={`queue-item-${item.id}`}
         className={clsx(
-          'border rounded-lg p-3 sm:p-4 space-y-2',
-          item.status === 'processing' && 'border-blue-400 bg-blue-50',
-          item.status === 'completed' && 'border-green-400 bg-green-50',
-          item.status === 'failed' && 'border-red-400 bg-red-50',
-          item.status === 'cancelled' && 'border-gray-400 bg-gray-50',
-          item.status === 'pending' && 'border-gray-200'
+          'rounded-xl p-4 sm:p-5 space-y-3 transition-all duration-200 backdrop-blur-sm shadow-sm hover:shadow-md',
+          item.status === 'processing' && 'bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200',
+          item.status === 'completed' && 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200',
+          item.status === 'failed' && 'bg-gradient-to-r from-red-50 to-rose-50 border border-red-200',
+          item.status === 'cancelled' && 'bg-gray-50 border border-gray-200',
+          item.status === 'pending' && 'bg-white border border-gray-200'
         )}
       >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-start sm:items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
-            <span className="text-xl sm:text-2xl flex-shrink-0">{getStatusIcon()}</span>
+            <span className="flex-shrink-0">{getStatusIcon()}</span>
             <div className="flex-1 min-w-0">
               <p className="font-medium text-gray-700 text-sm sm:text-base truncate pr-2">
                 {item.file.name}
@@ -126,10 +137,10 @@ export function QueueItem({ item }: QueueItemProps) {
             <span
               data-testid={`status-${item.id}`}
               className={clsx(
-                'px-2 py-1 text-xs sm:text-sm rounded whitespace-nowrap',
-                item.status === 'processing' && 'bg-blue-100 text-blue-700',
-                item.status === 'completed' && 'bg-green-100 text-green-700',
-                item.status === 'failed' && 'bg-red-100 text-red-700',
+                'px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap shadow-sm',
+                item.status === 'processing' && 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 animate-pulse',
+                item.status === 'completed' && 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700',
+                item.status === 'failed' && 'bg-gradient-to-r from-red-100 to-rose-100 text-red-700',
                 item.status === 'cancelled' && 'bg-gray-100 text-gray-700',
                 item.status === 'pending' && 'bg-gray-100 text-gray-600'
               )}
@@ -141,29 +152,30 @@ export function QueueItem({ item }: QueueItemProps) {
               <button
                 data-testid={`retry-${item.id}`}
                 onClick={() => retryFile(item.id)}
-                className="px-2 py-1 text-xs sm:text-sm bg-orange-500 text-white rounded hover:bg-orange-600 whitespace-nowrap"
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs sm:text-sm bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-200 font-medium shadow-sm"
               >
-                🔄 Retry
+                <RefreshCw className="w-3.5 h-3.5" />
+                Retry
               </button>
             )}
 
             {(item.status === 'pending' || item.status === 'failed' || item.status === 'cancelled') && (
-              <div className="flex gap-1">
+              <div className="flex gap-2">
                 <button
                   data-testid={`settings-${item.id}`}
                   onClick={() => setShowSettings(!showSettings)}
-                  className="px-2 py-1 text-xs sm:text-sm bg-gray-200 rounded hover:bg-gray-300"
+                  className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                   title="Settings"
                 >
-                  ⚙️
+                  <Settings className="w-4 h-4" />
                 </button>
                 <button
                   data-testid={`remove-${item.id}`}
                   onClick={() => removeFromQueue(item.id)}
-                  className="px-2 py-1 text-xs sm:text-sm bg-red-500 text-white rounded hover:bg-red-600"
+                  className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
                   title="Remove"
                 >
-                  ❌
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             )}
@@ -171,15 +183,21 @@ export function QueueItem({ item }: QueueItemProps) {
         </div>
 
         {item.status === 'processing' && progressInfo && (
-          <div className="space-y-1">
-            {/* Simple SVG progress bar that WILL work */}
-            <svg width="100%" height="8" className="w-full">
+          <div className="space-y-2 mt-3">
+            {/* Modern gradient progress bar */}
+            <svg width="100%" height="8" className="w-full rounded-full overflow-hidden">
               <rect width="100%" height="8" fill="#e5e7eb" rx="4" />
+              <defs>
+                <linearGradient id={`progress-gradient-${item.id}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#3b82f6" />
+                  <stop offset="100%" stopColor="#8b5cf6" />
+                </linearGradient>
+              </defs>
               <rect
                 data-testid={`progress-${item.id}`}
                 width={`${progressInfo.percent || 0}%`}
                 height="8"
-                fill="#3b82f6"
+                fill={`url(#progress-gradient-${item.id})`}
                 rx="4"
               />
             </svg>
@@ -211,17 +229,20 @@ export function QueueItem({ item }: QueueItemProps) {
       </div>
 
       {showSettings && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Settings for: {item.file.name}</h3>
+              <h3 className="text-lg font-semibold text-gray-800">Custom Settings</h3>
               <button
                 onClick={() => setShowSettings(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
+            <p className="text-sm text-gray-600 mb-4 truncate">
+              {item.file.name}
+            </p>
 
             <div className="space-y-4">
               <label className="flex items-center space-x-2">
@@ -275,18 +296,18 @@ export function QueueItem({ item }: QueueItemProps) {
                 </>
               )}
 
-              <div className="flex justify-end space-x-2 pt-4">
+              <div className="flex justify-end gap-3 pt-4 border-t">
                 <button
                   onClick={() => setShowSettings(false)}
-                  className="px-4 py-2 text-gray-600 bg-gray-100 rounded hover:bg-gray-200"
+                  className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleApplySettings}
-                  className="px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600"
+                  className="px-4 py-2 text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-medium shadow-sm"
                 >
-                  Apply
+                  Apply Settings
                 </button>
               </div>
             </div>
