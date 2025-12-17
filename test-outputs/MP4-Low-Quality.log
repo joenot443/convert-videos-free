@@ -1,0 +1,14 @@
+[info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[log] [HMR] connected
+[log] File injected: 1.mp4 (342968 bytes)
+[log] Worker ready for job: job-1-1765932316162
+[log] Encoder capabilities: {avc: true, aac: true}
+[info] Error when probing encoder support. Falling back to rerender path. OperationError: Encoding error. (Unexpected frame format.)
+    at VideoEncoderWrapper.ensureEncoder (http://localhost:3001/mediabunny.js:22775:28)
+    at VideoEncoderWrapper.add (http://localhost:3001/mediabunny.js:22701:18)
+    at VideoSampleSource.add (http://localhost:3001/mediabunny.js:23187:28)
+    at _Conversion._processVideoTrack (http://localhost:3001/mediabunny.js:24973:32)
+    at async _Conversion._init (http://localhost:3001/mediabunny.js:24719:11)
+    at async _Conversion.init (http://localhost:3001/mediabunny.js:24663:7)
+    at async convertToMp4Compat (http://localhost:3001/workers/conversion.worker.js:226:24)
+[warning] Output has already been finalized.

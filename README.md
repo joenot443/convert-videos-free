@@ -1,36 +1,135 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Media Converter
+
+A browser-based media conversion tool that converts various video formats to MP4 (H.264 + AAC) using WebCodecs and the Mediabunny library. Works entirely in the browser with no backend required.
+
+## Features
+
+- **In-Browser Conversion**: All processing happens locally in your browser
+- **Multiple Input Formats**: Supports MP4, MOV, WebM, MKV
+- **Standardized Output**: Converts to universally compatible MP4 (H.264 + AAC)
+- **Preserves Metadata**: Maintains orientation/rotation (especially for iPhone videos)
+- **Progress Tracking**: Real-time conversion progress display
+- **Quality Presets**: Choose between Low, Medium, and High quality
+- **Smart Download Handling**:
+  - Chrome/Edge: Stream directly to disk (for large files)
+  - Safari: In-memory conversion with automatic download
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+ installed
+- Modern browser (Chrome, Edge, or Safari recommended)
+- WebCodecs support (automatically checked by the app)
+
+### Installation
 
 ```bash
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Building for Production
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Create production build
+npm run build
 
-## Learn More
+# Start production server
+npm start
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Usage
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **Select a Video**: Click the upload area or drag and drop a video file
+2. **Choose Quality**: Select Low (2 Mbps), Medium (5 Mbps), or High (10 Mbps)
+3. **Streaming Option** (Chrome only): Enable to save directly to disk for large files
+4. **Convert**: Click "Convert to MP4" to start the conversion
+5. **Download**: File will automatically download when complete (or save location chosen if streaming)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Browser Compatibility
 
-## Deploy on Vercel
+| Browser | WebCodecs | Streaming Save | Notes |
+|---------|-----------|----------------|-------|
+| Chrome | ✅ | ✅ | Full support, recommended for large files |
+| Edge | ✅ | ✅ | Full support, recommended for large files |
+| Safari | ✅ | ❌ | Uses in-memory conversion, best for smaller files |
+| Firefox | ❌ | ❌ | Not supported (WebCodecs required) |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Technical Details
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Architecture
+
+- **Main Thread**: React UI for file selection and progress display
+- **Web Worker**: Handles conversion processing to avoid blocking UI
+- **Mediabunny**: Core conversion library with WebCodecs support
+
+### Conversion Pipeline
+
+1. File is loaded into a Web Worker
+2. Mediabunny demuxes the input container
+3. Video/audio streams are decoded using WebCodecs
+4. Streams are re-encoded to H.264/AAC
+5. Output is muxed into MP4 container
+6. File is either:
+   - Streamed to disk (Chrome/Edge with File System Access API)
+   - Buffered and downloaded (Safari/fallback)
+
+### Output Specifications
+
+- **Container**: MP4 (ISOBMFF)
+- **Video Codec**: H.264/AVC
+- **Audio Codec**: AAC
+- **Video Bitrates**:
+  - Low: ~2 Mbps
+  - Medium: ~5 Mbps
+  - High: ~10 Mbps
+- **Audio Bitrates**:
+  - Low: 96 kbps
+  - Medium: 128 kbps
+  - High: 192 kbps
+- **Audio Settings**: 48kHz, Stereo
+
+## Limitations
+
+- Requires WebCodecs support (modern browsers only)
+- Safari limited to in-memory conversion (may struggle with very large files)
+- No support for subtitles or multiple audio tracks (first track only)
+- DRM-protected content cannot be converted
+- **Some MOV files may not be supported**: The MediaBunny library has limited support for certain MOV codecs (particularly ProRes and some Apple-specific formats). If you encounter issues with MOV files, try converting them to a standard H.264 MP4 first using other tools
+
+## Development
+
+### Project Structure
+
+```
+media-converter/
+├── app/                    # Next.js app directory
+│   └── page.tsx           # Main page component
+├── components/            # React components
+│   └── MediaConverter.tsx # Main converter UI component
+├── lib/                   # Core libraries
+│   └── conversion/        # Conversion service and types
+│       ├── ConversionService.ts
+│       └── types.ts
+├── public/                # Static assets
+│   └── workers/          # Web Workers
+│       └── conversion.worker.js
+└── package.json          # Dependencies
+```
+
+### Key Dependencies
+
+- **Next.js**: React framework
+- **Mediabunny**: Media conversion library with WebCodecs support
+- **TypeScript**: Type safety
+- **Tailwind CSS**: Styling
+
+## License
+
+This project is built as a demonstration of browser-based media conversion capabilities.

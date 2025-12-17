@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Streaming Mode Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .log { background: #f0f0f0; padding: 10px; margin: 10px 0; }
+        .error { color: red; }
+        .success { color: green; }
+        button { padding: 10px 20px; margin: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Manual Streaming Mode Test</h1>
+    <p>Open this file in Chrome/Edge at: http://localhost:3000/test-real-streaming.html</p>
+
+    <button id="testBtn">Run Streaming Mode Test</button>
+    <button id="clearBtn">Clear Logs</button>
+
+    <div id="logs"></div>
+
+    <script>
+        const logs = document.getElementById('logs');
+
+        function log(message, type = '') {
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logs.appendChild(div);
+            console.log(message);
+        }
+
+        function clearLogs() {
+            logs.innerHTML = '';
+        }
+
+        async function runStreamingTest() {
+            log('Starting streaming mode test...', 'success');
+
+            try {
+                // Check if File System Access API is available
+                if (!('showSaveFilePicker' in window)) {
+                    throw new Error('File System Access API not available in this browser');
+                }
+                log('✓ File System Access API is available');
+
+                // Create a test video file
+                const videoData = new Uint8Array(1000000); // 1MB test data
+                // Add MP4 header
+                const header = new TextEncoder().encode('....ftypisom');
+                for (let i = 0; i < header.length && i < videoData.length; i++) {
+                    videoData[i] = header[i];
+                }
+
+                const blob = new Blob([videoData], { type: 'video/mp4' });
+                const file = new File([blob], 'test-video.mp4', { type: 'video/mp4' });
+                log(`✓ Created test file: ${file.name} (${file.size} bytes)`);
+
+                // Test streaming write
+                log('Testing streaming write to file system...');
+
+                // Get file handle
+                const handle = await window.showSaveFilePicker({
+                    suggestedName: 'streaming-test.mp4',
+                    types: [{
+                        description: 'MP4 Video',
+                        accept: { 'video/mp4': ['.mp4'] }
+                    }]
+                });
+                log('✓ Got file handle');
+
+                // Create writable stream
+                const writable = await handle.createWritable();
+                const writer = writable.getWriter();
+                log('✓ Created writable stream');
+
+                // Write data in chunks (simulating streaming)
+                const chunkSize = 100000; // 100KB chunks
+                let bytesWritten = 0;
+                const data = await blob.arrayBuffer();
+
+                for (let i = 0; i < data.byteLength; i += chunkSize) {
+                    const chunk = data.slice(i, Math.min(i + chunkSize, data.byteLength));
+                    await writer.write(new Uint8Array(chunk));
+                    bytesWritten += chunk.byteLength;
+                    log(`  Wrote chunk: ${bytesWritten}/${data.byteLength} bytes (${Math.round(bytesWritten * 100 / data.byteLength)}%)`);
+                }
+
+                // Close the stream
+                await writer.close();
+                log('✓ Stream closed successfully', 'success');
+
+                log('✅ STREAMING MODE TEST PASSED', 'success');
+                log('File has been saved to your selected location');
+
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    log('⚠️ User cancelled file selection', 'error');
+                } else {
+                    log(`❌ Error: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        document.getElementById('testBtn').addEventListener('click', runStreamingTest);
+        document.getElementById('clearBtn').addEventListener('click', clearLogs);
+
+        // Auto-run test on load
+        log('Page loaded. Click "Run Streaming Mode Test" to begin.');
+        log('This test MUST be run in Chrome or Edge (not automated browser)');
+    </script>
+</body>
+</html>
