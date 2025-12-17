@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'text/html',
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 }

@@ -18,7 +18,7 @@ A browser-based media conversion tool that converts various video formats to MP4
 
 ### Prerequisites
 
-- Node.js 18+ installed
+- Node.js 16.8+ installed (compatible with Ubuntu 18.04)
 - Modern browser (Chrome, Edge, or Safari recommended)
 - WebCodecs support (automatically checked by the app)
 
