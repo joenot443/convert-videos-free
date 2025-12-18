@@ -40,23 +40,23 @@ export function FileQueue() {
 
   if (queue.length === 0) {
     return (
-      <div data-testid="queue-container" className="bg-white/50 backdrop-blur-sm border border-gray-200 rounded-xl p-8 sm:p-12 shadow-sm">
+      <div data-testid="queue-container" className="bg-white/60 backdrop-blur-sm border border-gray-300/60 rounded-2xl p-8 sm:p-10 shadow-lg shadow-gray-200/20">
         <div className="text-center">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Package className="w-8 h-8 text-gray-400" />
+          <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200/50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+            <Package className="w-8 h-8 text-gray-500" />
           </div>
-          <p className="text-lg font-medium text-gray-700 mb-1">No files in queue</p>
-          <p className="text-sm text-gray-500">Add videos above to start converting</p>
+          <p className="text-base font-semibold text-gray-900 mb-1">No files in queue</p>
+          <p className="text-sm text-gray-600">Add videos above to start converting</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div data-testid="queue-container" className="space-y-4">
+    <div data-testid="queue-container" className="space-y-3">
       {/* Queue Header */}
-      <div className="bg-white/50 backdrop-blur-sm border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-5 bg-gradient-to-r from-gray-50 to-gray-100 gap-3">
+      <div className="bg-white/60 backdrop-blur-sm border border-gray-300/60 rounded-2xl shadow-lg shadow-gray-200/20 overflow-hidden">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-5 bg-gradient-to-r from-white/80 to-gray-50/80 gap-3">
           <div>
             <h3 className="font-bold text-gray-800 text-base sm:text-lg flex items-center gap-2">
               <Package className="w-5 h-5 text-gray-600" />
@@ -109,14 +109,14 @@ export function FileQueue() {
       </div>
 
       {/* Action Buttons */}
-      <div className="bg-white/50 backdrop-blur-sm border border-gray-200 rounded-xl p-4 sm:p-5 shadow-sm">
+      <div className="bg-white/60 backdrop-blur-sm border border-gray-300/60 rounded-2xl p-4 sm:p-5 shadow-lg shadow-gray-200/20">
         <div className="flex items-center justify-center gap-3 flex-wrap">
           {!isProcessing ? (
             <button
               data-testid="start-processing"
               onClick={handleStart}
               disabled={pendingCount === 0}
-              className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium rounded-lg hover:from-blue-600 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-semibold rounded-xl hover:from-blue-600 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 shadow-lg shadow-blue-200/40 hover:shadow-xl hover:shadow-blue-200/50 transform hover:-translate-y-0.5"
             >
               <Play className="w-4 h-4" />
               Start Processing

@@ -24,39 +24,58 @@ export function SettingsPanel() {
   ];
 
   return (
-    <div data-testid="settings-panel" className="bg-white/50 backdrop-blur-sm border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+    <div data-testid="settings-panel" className="bg-white/60 backdrop-blur-sm border border-gray-300/60 rounded-2xl shadow-lg shadow-gray-200/20 overflow-hidden">
       <div
-        className="flex items-center justify-between p-4 sm:p-5 bg-gradient-to-r from-gray-50 to-gray-100 cursor-pointer hover:from-gray-100 hover:to-gray-150 transition-colors"
+        className="flex items-center justify-between p-4 bg-white/90 cursor-pointer hover:bg-gray-50/90 transition-all duration-200"
         onClick={() => setIsCollapsed(!isCollapsed)}
       >
-        <div className="flex items-center gap-2">
-          <Settings className="w-5 h-5 text-gray-600" />
-          <h3 className="font-bold text-gray-800 text-sm sm:text-base">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-gradient-to-br from-gray-100 to-gray-200/70 rounded-xl">
+            <Settings className="w-4 h-4 text-gray-700" />
+          </div>
+          <div className="flex-1">
             {isCollapsed ? (
-              <span className="text-xs sm:text-sm font-medium text-gray-600">
-                Settings: {globalSettings.quality} • {globalSettings.resolution} • Auto-download {globalSettings.autoDownload ? 'enabled' : 'disabled'}
-              </span>
+              <div className="flex items-center flex-wrap gap-x-4 gap-y-1">
+                <span className="font-semibold text-gray-900 text-sm">Settings</span>
+                <div className="flex items-center gap-3 text-xs">
+                  <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md font-medium">
+                    {globalSettings.quality === 'low' ? 'Low' : globalSettings.quality === 'medium' ? 'Medium' : 'High'}
+                  </span>
+                  <span className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded-md font-medium">
+                    {globalSettings.resolution === 'original' ? 'Original' : globalSettings.resolution}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-md font-medium ${
+                    globalSettings.autoDownload
+                      ? 'bg-green-50 text-green-700'
+                      : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    Auto-download {globalSettings.autoDownload ? 'on' : 'off'}
+                  </span>
+                </div>
+              </div>
             ) : (
-              'Settings'
+              <h3 className="font-semibold text-gray-900 text-sm">Settings</h3>
             )}
-          </h3>
+          </div>
         </div>
-        <button
-          className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
-          aria-label={isCollapsed ? 'Show settings' : 'Hide settings'}
-        >
-          {isCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
+            aria-label={isCollapsed ? 'Show settings' : 'Hide settings'}
+          >
+            {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+          </button>
+        </div>
       </div>
 
       {!isCollapsed && (
-        <div className="p-5 sm:p-6 space-y-5">
+        <div className="p-4 sm:p-5 space-y-4 bg-gray-50/30">
           {/* Quality Settings */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
+            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
               Video Quality
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {qualityOptions.map(option => (
                 <button
                   key={option.value}
@@ -64,14 +83,17 @@ export function SettingsPanel() {
                   onClick={() => updateGlobalSettings({ quality: option.value })}
                   type="button"
                   className={clsx(
-                    'px-4 py-3 rounded-lg text-sm font-medium text-center transition-all duration-200',
+                    'relative px-4 py-2.5 rounded-lg text-sm font-medium text-center transition-all duration-200 border',
                     globalSettings.quality === option.value
-                      ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md transform scale-[1.02]'
-                      : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300'
+                      ? 'bg-blue-50 text-blue-700 border-blue-200 shadow-sm'
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                   )}
                 >
+                  {globalSettings.quality === option.value && (
+                    <div className="absolute inset-x-0 -top-px h-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-t-lg" />
+                  )}
                   <div className="font-semibold">{option.label}</div>
-                  <div className="text-xs opacity-80">{option.description}</div>
+                  <div className="text-xs opacity-75 mt-0.5">{option.description}</div>
                 </button>
               ))}
             </div>
@@ -81,7 +103,7 @@ export function SettingsPanel() {
           <div>
             <label
               htmlFor="resolution-select"
-              className="block text-sm font-semibold text-gray-700 mb-3"
+              className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2"
             >
               Maximum Resolution
             </label>
@@ -90,7 +112,7 @@ export function SettingsPanel() {
               data-testid="resolution-select"
               value={globalSettings.resolution}
               onChange={(e) => updateGlobalSettings({ resolution: e.target.value as ResolutionCap })}
-              className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium text-gray-700"
+              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm font-medium text-gray-700 hover:border-gray-300"
             >
               {resolutionOptions.map(option => (
                 <option key={option.value} value={option.value}>
@@ -101,31 +123,33 @@ export function SettingsPanel() {
           </div>
 
           {/* Checkbox Settings */}
-          <div className="space-y-3 bg-gray-50 rounded-lg p-4">
-            <label className="flex items-center space-x-3 cursor-pointer group">
+          <div className="space-y-2">
+            <label className="flex items-center space-x-3 cursor-pointer p-3 rounded-lg hover:bg-white/50 transition-colors">
               <input
                 data-testid="auto-download"
                 type="checkbox"
                 checked={globalSettings.autoDownload}
                 onChange={(e) => updateGlobalSettings({ autoDownload: e.target.checked })}
-                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 focus:ring-offset-2"
+                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
               />
-              <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors">
-                Auto-download files when complete
-              </span>
+              <div className="flex-1">
+                <span className="text-sm font-medium text-gray-700">Auto-download</span>
+                <span className="block text-xs text-gray-500">Automatically save files when conversion completes</span>
+              </div>
             </label>
 
-            <label className="flex items-center space-x-3 cursor-pointer group">
+            <label className="flex items-center space-x-3 cursor-pointer p-3 rounded-lg hover:bg-white/50 transition-colors">
               <input
                 data-testid="remove-after-download"
                 type="checkbox"
                 checked={globalSettings.removeAfterDownload}
                 onChange={(e) => updateGlobalSettings({ removeAfterDownload: e.target.checked })}
-                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 focus:ring-offset-2"
+                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
               />
-              <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors">
-                Remove from queue after download
-              </span>
+              <div className="flex-1">
+                <span className="text-sm font-medium text-gray-700">Auto-cleanup</span>
+                <span className="block text-xs text-gray-500">Remove files from queue after download</span>
+              </div>
             </label>
           </div>
         </div>

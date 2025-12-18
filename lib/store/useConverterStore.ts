@@ -115,6 +115,12 @@ export const useConverterStore = create<ConverterStore>((set, get) => ({
       addedAt: new Date(),
     }));
 
+    // Track files added
+    if (newItems.length > 0) {
+      const totalSizeMB = newItems.reduce((acc, item) => acc + item.file.size, 0) / (1024 * 1024);
+      trackUI.filesAdded(newItems.length, Math.round(totalSizeMB));
+    }
+
     set(state => ({
       queue: [...state.queue, ...newItems],
     }));
@@ -122,6 +128,12 @@ export const useConverterStore = create<ConverterStore>((set, get) => ({
 
   removeFromQueue: (id: string) => {
     set(state => {
+      // Track file removal
+      const itemToRemove = state.queue.find(item => item.id === id);
+      if (itemToRemove) {
+        trackUI.fileRemoved(itemToRemove.file.name);
+      }
+
       const newQueue = state.queue.filter(item => item.id !== id);
       const newProgress = new Map(state.progress);
       newProgress.delete(id);
@@ -145,6 +157,10 @@ export const useConverterStore = create<ConverterStore>((set, get) => ({
 
   clearQueue: () => {
     const { isProcessing, currentJobId } = get();
+
+    // Track queue cleared
+    trackUI.queueCleared();
+
     if (isProcessing && currentJobId) {
       // Keep the currently processing item
       set(state => ({
@@ -191,6 +207,20 @@ export const useConverterStore = create<ConverterStore>((set, get) => ({
 
   // Settings Actions
   updateGlobalSettings: (settings: Partial<ConversionSettings>) => {
+    // Track settings changes
+    if (settings.quality !== undefined) {
+      trackUI.qualitySelected(settings.quality);
+    }
+    if (settings.resolution !== undefined) {
+      trackUI.resolutionSelected(settings.resolution);
+    }
+    if (settings.autoDownload !== undefined) {
+      trackUI.settingsChanged('autoDownload', settings.autoDownload.toString());
+    }
+    if (settings.removeAfterDownload !== undefined) {
+      trackUI.settingsChanged('removeAfterDownload', settings.removeAfterDownload.toString());
+    }
+
     set(state => ({
       globalSettings: { ...state.globalSettings, ...settings },
     }));
@@ -220,14 +250,23 @@ export const useConverterStore = create<ConverterStore>((set, get) => ({
     const hasPending = queue.some(item => item.status === 'pending');
     if (!hasPending) return;
 
+    // Track processing started
+    trackUI.processingStarted();
+
     set({ isProcessing: true, isPaused: false });
   },
 
   pauseProcessing: () => {
+    // Track processing paused
+    trackUI.processingPaused();
+
     set({ isPaused: true });
   },
 
   resumeProcessing: () => {
+    // Track processing resumed
+    trackUI.processingResumed();
+
     set({ isPaused: false });
   },
 
@@ -386,6 +425,9 @@ export const useConverterStore = create<ConverterStore>((set, get) => ({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+
+    // Track download event
+    trackConversion.downloaded(file.outputName);
 
     // Remove from queue if setting is enabled
     if (globalSettings.removeAfterDownload) {

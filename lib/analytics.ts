@@ -54,4 +54,28 @@ export const trackUI = {
   resolutionSelected: (resolution: string) => {
     trackEvent('resolution_selected', 'Settings', resolution);
   },
+
+  filesAdded: (count: number, totalSizeMB: number) => {
+    trackEvent('files_added', 'UI', `${count} files`, totalSizeMB);
+  },
+
+  fileRemoved: (fileName: string) => {
+    trackEvent('file_removed', 'UI', fileName);
+  },
+
+  queueCleared: () => {
+    trackEvent('queue_cleared', 'UI');
+  },
+
+  processingStarted: () => {
+    trackEvent('processing_started', 'UI');
+  },
+
+  processingPaused: () => {
+    trackEvent('processing_paused', 'UI');
+  },
+
+  processingResumed: () => {
+    trackEvent('processing_resumed', 'UI');
+  },
 };

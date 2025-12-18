@@ -6,6 +6,8 @@ import { SettingsPanel } from './SettingsPanel';
 import { FileQueue } from './FileQueue';
 import { OutputList } from './OutputList';
 import { ConversionService } from '@/lib/conversion/ConversionService';
+import GoogleAdSense from '@/components/GoogleAdSense';
+import { SEOContent } from '@/components/SEOContent';
 
 export function ConverterContainer() {
   const [isSupported, setIsSupported] = useState<boolean | null>(null);
@@ -88,63 +90,127 @@ export function ConverterContainer() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      <div className="container mx-auto px-4 py-6 sm:py-12 max-w-6xl">
+      <div className="container mx-auto px-4 py-3 sm:py-6 max-w-6xl">
         {/* Header */}
-        <div className="text-center mb-8 sm:mb-12">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-3">
-            Media Converter
-          </h1>
-          <p className="text-base sm:text-lg text-gray-700 font-medium">
+        <div className="text-center mb-4 sm:mb-6">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl blur-xl opacity-40 animate-pulse"></div>
+              <div className="relative bg-gradient-to-br from-blue-500 to-indigo-600 p-2.5 rounded-xl shadow-lg">
+                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 16h4m10 0h4M8 4h8a1 1 0 011 1v14a1 1 0 01-1 1H8a1 1 0 01-1-1V5a1 1 0 011-1z" />
+                </svg>
+              </div>
+            </div>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900">
+              <span>Convert Videos</span>
+              <span className="relative ml-2">
+                <span className="relative z-10 text-blue-600">Free</span>
+                <svg className="absolute -bottom-1 left-0 w-full h-3 text-blue-400 opacity-40" viewBox="0 0 100 12" preserveAspectRatio="none">
+                  <path d="M0,6 Q25,0 50,6 T100,6" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round"/>
+                </svg>
+              </span>
+            </h1>
+          </div>
+          <p className="text-sm sm:text-base text-gray-600 font-medium max-w-2xl mx-auto">
             Convert videos to MP4 format directly in your browser
           </p>
-          <div className="flex items-center justify-center mt-3 space-x-6">
-            <div className="flex items-center text-sm text-gray-600">
-              <svg className="w-4 h-4 mr-1.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex flex-wrap items-center justify-center mt-3 gap-2">
+            <div className="flex items-center text-sm text-gray-700 bg-green-50/70 px-3 py-1.5 rounded-full border border-green-200/50">
+              <svg className="w-4 h-4 mr-1.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
-              Complete privacy
+              <span className="font-medium">Complete privacy</span>
             </div>
-            <div className="flex items-center text-sm text-gray-600">
-              <svg className="w-4 h-4 mr-1.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex items-center text-sm text-gray-700 bg-blue-50/70 px-3 py-1.5 rounded-full border border-blue-200/50">
+              <svg className="w-4 h-4 mr-1.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              WebCodecs powered
+              <span className="font-medium">WebCodecs powered</span>
             </div>
-            <div className="flex items-center text-sm text-gray-600">
-              <svg className="w-4 h-4 mr-1.5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex items-center text-sm text-gray-700 bg-purple-50/70 px-3 py-1.5 rounded-full border border-purple-200/50">
+              <svg className="w-4 h-4 mr-1.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
               </svg>
-              No uploads
+              <span className="font-medium">No uploads</span>
             </div>
           </div>
         </div>
 
-        <div className="space-y-4 sm:space-y-6">
+        {/* Top Ad - Responsive Display Ad */}
+        <div className="mb-3">
+          <GoogleAdSense
+            dataAdSlot="XXXXXXXXXX" // Replace with your actual ad slot ID
+            dataAdFormat="auto"
+            dataFullWidthResponsive={true}
+            className="text-center"
+          />
+        </div>
+
+        <div className="space-y-3">
           {/* File Drop Zone */}
           <FileDropZone />
 
           {/* Settings Panel */}
           <SettingsPanel />
 
+          {/* Middle Ad - In-article Ad */}
+          <GoogleAdSense
+            dataAdSlot="YYYYYYYYYY" // Replace with your actual ad slot ID
+            dataAdFormat="fluid"
+            dataFullWidthResponsive={true}
+            className="text-center"
+            style={{ minHeight: '100px' }}
+          />
+
           {/* File Queue */}
           <FileQueue />
 
           {/* Completed Files */}
           <OutputList />
+
+          {/* Bottom Ad - Display Ad */}
+          <GoogleAdSense
+            dataAdSlot="ZZZZZZZZZZ" // Replace with your actual ad slot ID
+            dataAdFormat="auto"
+            dataFullWidthResponsive={true}
+            className="text-center"
+          />
         </div>
 
+        {/* SEO Content */}
+        <SEOContent />
+
         {/* Footer */}
-        <div className="mt-12 sm:mt-16 pt-8 border-t border-gray-200/50">
-          <div className="flex flex-col sm:flex-row items-center justify-between">
-            <div className="text-sm text-gray-600">
-              Powered by <span className="font-semibold text-gray-700">WebCodecs API</span>
-            </div>
-            <div className="flex items-center space-x-4 mt-4 sm:mt-0">
-              <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-600 transition-colors">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                </svg>
+        <div className="mt-6 sm:mt-8 pt-5 border-t border-gray-200/50">
+          <div className="flex flex-col items-center space-y-3">
+            <nav className="flex flex-wrap items-center justify-center gap-6 text-sm">
+              <a href="/about" className="text-gray-600 hover:text-blue-600 transition-colors">
+                About
               </a>
+              <a href="/privacy" className="text-gray-600 hover:text-blue-600 transition-colors">
+                Privacy Policy
+              </a>
+              <a href="/terms" className="text-gray-600 hover:text-blue-600 transition-colors">
+                Terms & Conditions
+              </a>
+              <a href="https://joecrozier.ca" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-blue-600 transition-colors">
+                Developer
+              </a>
+            </nav>
+
+            <div className="flex flex-col sm:flex-row items-center gap-4 text-sm text-gray-600">
+              <div>
+                Made with ❤️ by <a href="https://joecrozier.ca" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700">Joe Crozier</a>
+              </div>
+              <div className="hidden sm:block">•</div>
+              <div>
+                Powered by <span className="font-semibold text-gray-700">WebCodecs API</span>
+              </div>
+            </div>
+
+            <div className="text-xs text-gray-500">
+              © {new Date().getFullYear()} Convert Videos Free. All rights reserved.
             </div>
           </div>
         </div>

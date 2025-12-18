@@ -111,11 +111,11 @@ export function FileDropZone() {
         onDrop={handleDrop}
         onClick={handleClick}
         className={clsx(
-          'relative border-2 border-dashed rounded-xl transition-all duration-300 cursor-pointer backdrop-blur-sm',
+          'relative border-2 border-dashed rounded-2xl transition-all duration-300 cursor-pointer backdrop-blur-sm group',
           isDragging
-            ? 'border-blue-400 bg-blue-50/50 shadow-lg shadow-blue-100/50 scale-[1.02]'
-            : 'border-gray-200 hover:border-blue-300 hover:shadow-lg hover:shadow-gray-100/50 bg-white/50',
-          hasFiles ? 'p-4 sm:p-5' : 'p-10 sm:p-14'
+            ? 'border-blue-500 bg-gradient-to-br from-blue-50/70 to-indigo-50/70 shadow-xl shadow-blue-200/30 scale-[1.01]'
+            : 'border-gray-300/60 hover:border-blue-400/60 hover:shadow-xl hover:shadow-blue-100/20 hover:bg-gradient-to-br hover:from-white/80 hover:to-blue-50/30 bg-white/60',
+          hasFiles ? 'p-4 sm:p-5' : 'p-8 sm:p-10'
         )}
       >
         <input
@@ -148,30 +148,31 @@ export function FileDropZone() {
             </div>
           </div>
         ) : (
-          <div className="text-center px-4">
-            <div className="flex justify-center mb-4">
+          <div className="text-center px-2">
+            <div className="flex justify-center mb-3">
               {isDragging ? (
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center animate-pulse">
-                  <Upload className="w-8 h-8 text-blue-600" />
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center animate-bounce shadow-lg shadow-blue-200/50">
+                  <Upload className="w-8 h-8 text-white" />
                 </div>
               ) : (
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-                  <Video className="w-8 h-8 text-gray-400" />
+                <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200/50 rounded-2xl flex items-center justify-center group-hover:from-blue-100 group-hover:to-indigo-100 transition-all duration-300">
+                  <Video className="w-8 h-8 text-gray-500" />
                 </div>
               )}
             </div>
-            <p className="text-base sm:text-lg font-semibold text-gray-800 mb-2">
+            <p className="text-base sm:text-lg font-semibold text-gray-900 mb-1">
               {isDragging ? 'Drop files to add to queue' : 'Drop videos here to convert'}
             </p>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-gray-600 mb-3">
               or
-              <span className="text-blue-600 font-medium mx-1">browse</span>
+              <button className="text-blue-600 hover:text-blue-700 font-semibold mx-1 underline-offset-2 hover:underline transition-colors">
+                browse
+              </button>
               from your computer
             </p>
-            <div className="flex items-center justify-center gap-4 text-xs text-gray-400">
-              <span>MP4 • MOV • WebM • MKV • AVI</span>
-              <span>•</span>
-              <span>Max 2GB per file</span>
+            <div className="flex flex-wrap items-center justify-center gap-3 text-xs">
+              <span className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-md font-medium">MP4 • MOV • WebM • MKV • AVI</span>
+              <span className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-md font-medium">Max 2GB per file</span>
             </div>
           </div>
         )}

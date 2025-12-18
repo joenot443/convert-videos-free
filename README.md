@@ -1,6 +1,6 @@
-# Media Converter
+# Convert Videos Free
 
-A browser-based media conversion tool that converts various video formats to MP4 (H.264 + AAC) using WebCodecs and the Mediabunny library. Works entirely in the browser with no backend required.
+A free, privacy-focused browser-based video conversion tool that converts various video formats to MP4 (H.264 + AAC) using WebCodecs and the Mediabunny library. Works entirely in your browser with no uploads or backend required.
 
 ## Features
 
