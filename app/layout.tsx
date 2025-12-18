@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://convertvideosfree.com'), // Replace with your actual domain
+  metadataBase: new URL('https://convertvideosfree.com'),
   title: "Convert Videos Free - Online Video to MP4 Converter | No Upload Required",
   description: "Free online video converter to MP4. Convert MOV, WebM, MKV, AVI files instantly in your browser. 100% privacy - no uploads, no registration. Powered by WebCodecs.",
   keywords: "free video converter, convert video to mp4, online video converter, mov to mp4, webm to mp4, mkv to mp4, avi to mp4, browser video converter, no upload video converter, privacy video converter, convert videos online free, mp4 converter online, video format converter, webcodecs converter",
@@ -54,20 +54,11 @@ export const metadata: Metadata = {
     siteName: "Convert Videos Free",
     type: "website",
     locale: "en_US",
-    images: [
-      {
-        url: "/og-image.png", // You'll need to create this
-        width: 1200,
-        height: 630,
-        alt: "Convert Videos Free - Online Video Converter",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Convert Videos Free - Online Video to MP4 Converter",
     description: "Free browser-based video converter. 100% privacy - files never leave your device.",
-    images: ["/og-image.png"],
   },
   robots: {
     index: true,

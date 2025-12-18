@@ -357,7 +357,12 @@ declare global {
     testResults?: {
       passed: number;
       failed: number;
-      tests: TestResult[];
+      tests: Array<{
+        name: string;
+        status: string;
+        message?: string;
+        duration?: number;
+      }>;
     };
   }
 }
