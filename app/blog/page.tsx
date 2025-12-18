@@ -17,7 +17,7 @@ const articles = [
   },
   {
     slug: 'best-video-formats-explained',
-    title: 'Video Formats Explained: MP4, MOV, WebM, MKV - Which Should You Use?',
+    title: 'Video Formats Explained: MP4, MOV, WebM, MKV',
     description: 'A comprehensive guide to video formats. Learn the pros and cons of each format and when to use them for YouTube, social media, or archiving.',
     date: '2024-12-14',
     readTime: '8 min read',
@@ -33,7 +33,7 @@ const articles = [
   },
   {
     slug: 'video-settings-for-social-media',
-    title: 'Best Video Settings for YouTube, TikTok, Instagram & More',
+    title: 'Best Video Settings for YouTube, TikTok, Instagram and More',
     description: 'Optimize your videos for every platform. Resolution, bitrate, and format recommendations for YouTube, TikTok, Instagram, Twitter, and Facebook.',
     date: '2024-12-12',
     readTime: '7 min read',
@@ -45,7 +45,6 @@ export default function BlogPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-12 max-w-4xl">
-        {/* Back to Home */}
         <Link
           href="/"
           className="inline-flex items-center text-blue-600 hover:text-blue-700 mb-8 transition-colors"
@@ -56,18 +55,15 @@ export default function BlogPage() {
           Back to Converter
         </Link>
 
-        {/* Header */}
-        <div className="text-center mb-12">
+        <header className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
             Video Conversion Blog
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Guides, tips, and insights to help you get the most out of your video files.
-            Learn about formats, quality settings, and modern conversion technology.
           </p>
-        </div>
+        </header>
 
-        {/* Articles Grid */}
         <div className="space-y-6">
           {articles.map((article) => (
             <Link
@@ -87,20 +83,17 @@ export default function BlogPage() {
               <p className="text-gray-600 mb-4">
                 {article.description}
               </p>
-              <div className="flex items-center text-sm text-gray-500">
-                <time dateTime={article.date}>
-                  {new Date(article.date).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </time>
-              </div>
+              <time dateTime={article.date} className="text-sm text-gray-500">
+                {new Date(article.date).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </time>
             </Link>
           ))}
         </div>
 
-        {/* CTA Section */}
         <div className="mt-12 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-8 text-center text-white">
           <h2 className="text-2xl font-bold mb-3">Ready to Convert Your Videos?</h2>
           <p className="mb-6 text-blue-100">
@@ -117,10 +110,9 @@ export default function BlogPage() {
           </Link>
         </div>
 
-        {/* Footer */}
-        <div className="text-center mt-12 text-sm text-gray-600">
-          <p>© {new Date().getFullYear()} Convert Videos Free. All rights reserved.</p>
-        </div>
+        <footer className="text-center mt-12 text-sm text-gray-600">
+          <p>&copy; {new Date().getFullYear()} Convert Videos Free. All rights reserved.</p>
+        </footer>
       </div>
     </div>
   );
