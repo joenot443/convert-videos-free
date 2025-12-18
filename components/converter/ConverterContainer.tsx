@@ -6,7 +6,6 @@ import { SettingsPanel } from './SettingsPanel';
 import { FileQueue } from './FileQueue';
 import { OutputList } from './OutputList';
 import { ConversionService } from '@/lib/conversion/ConversionService';
-import GoogleAdSense from '@/components/GoogleAdSense';
 import { SEOContent } from '@/components/SEOContent';
 
 export function ConverterContainer() {
@@ -137,16 +136,6 @@ export function ConverterContainer() {
           </div>
         </div>
 
-        {/* Top Ad - Responsive Display Ad */}
-        <div className="mb-3">
-          <GoogleAdSense
-            dataAdSlot="XXXXXXXXXX" // Replace with your actual ad slot ID
-            dataAdFormat="auto"
-            dataFullWidthResponsive={true}
-            className="text-center"
-          />
-        </div>
-
         <div className="space-y-3">
           {/* File Drop Zone */}
           <FileDropZone />
@@ -154,28 +143,11 @@ export function ConverterContainer() {
           {/* Settings Panel */}
           <SettingsPanel />
 
-          {/* Middle Ad - In-article Ad */}
-          <GoogleAdSense
-            dataAdSlot="YYYYYYYYYY" // Replace with your actual ad slot ID
-            dataAdFormat="fluid"
-            dataFullWidthResponsive={true}
-            className="text-center"
-            style={{ minHeight: '100px' }}
-          />
-
           {/* File Queue */}
           <FileQueue />
 
           {/* Completed Files */}
           <OutputList />
-
-          {/* Bottom Ad - Display Ad */}
-          <GoogleAdSense
-            dataAdSlot="ZZZZZZZZZZ" // Replace with your actual ad slot ID
-            dataAdFormat="auto"
-            dataFullWidthResponsive={true}
-            className="text-center"
-          />
         </div>
 
         {/* SEO Content */}

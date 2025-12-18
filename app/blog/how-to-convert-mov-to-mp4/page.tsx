@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Metadata } from 'next';
+import GoogleAdSense from '@/components/GoogleAdSense';
 
 export const metadata: Metadata = {
   title: 'How to Convert MOV to MP4 Without Losing Quality | Convert Videos Free',
@@ -142,6 +143,14 @@ export default function MovToMp4Article() {
               <li><span className="font-semibold">Adobe Media Encoder</span> — Professional tool, part of Creative Cloud.</li>
             </ul>
 
+            <div className="my-8">
+              <GoogleAdSense
+                dataAdSlot="XXXXXXXXXX"
+                dataAdFormat="auto"
+                dataFullWidthResponsive={true}
+              />
+            </div>
+
             <h2 className="text-2xl font-bold text-gray-900 mt-10 mb-4">Recommended Settings by Use Case</h2>
 
             <div className="overflow-x-auto mb-6">
@@ -212,6 +221,14 @@ export default function MovToMp4Article() {
             <p className="text-gray-700">
               Ready to convert? <Link href="/" className="text-blue-600 hover:underline font-medium">Try Convert Videos Free</Link>—no uploads, no registration, completely free.
             </p>
+          </div>
+
+          <div className="my-8">
+            <GoogleAdSense
+              dataAdSlot="YYYYYYYYYY"
+              dataAdFormat="auto"
+              dataFullWidthResponsive={true}
+            />
           </div>
 
           <div className="mt-12 pt-8 border-t border-gray-100">

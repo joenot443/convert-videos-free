@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Metadata } from 'next';
+import GoogleAdSense from '@/components/GoogleAdSense';
 
 export const metadata: Metadata = {
   title: 'Best Video Settings for YouTube, TikTok, Instagram | Convert Videos Free',
@@ -223,6 +224,14 @@ export default function SocialMediaSettingsArticle() {
               <li>Same specs as Instagram Reels (Meta owns both)</li>
             </ul>
 
+            <div className="my-8">
+              <GoogleAdSense
+                dataAdSlot="XXXXXXXXXX"
+                dataAdFormat="auto"
+                dataFullWidthResponsive={true}
+              />
+            </div>
+
             <h2 className="text-2xl font-bold text-gray-900 mt-10 mb-4">LinkedIn</h2>
 
             <div className="overflow-x-auto mb-6">
@@ -353,6 +362,14 @@ export default function SocialMediaSettingsArticle() {
             <p className="text-gray-700">
               <Link href="/" className="text-blue-600 hover:underline font-medium">Convert Videos Free</Link> handles the conversion directly in your browser—no uploads to external servers required.
             </p>
+          </div>
+
+          <div className="my-8">
+            <GoogleAdSense
+              dataAdSlot="YYYYYYYYYY"
+              dataAdFormat="auto"
+              dataFullWidthResponsive={true}
+            />
           </div>
 
           <div className="mt-12 pt-8 border-t border-gray-100">

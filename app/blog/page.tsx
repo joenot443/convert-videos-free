@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Metadata } from 'next';
+import GoogleAdSense from '@/components/GoogleAdSense';
 
 export const metadata: Metadata = {
   title: 'Video Conversion Guides & Tips | Convert Videos Free Blog',
@@ -63,6 +64,14 @@ export default function BlogPage() {
             Guides, tips, and insights to help you get the most out of your video files.
           </p>
         </header>
+
+        <div className="mb-8">
+          <GoogleAdSense
+            dataAdSlot="XXXXXXXXXX"
+            dataAdFormat="auto"
+            dataFullWidthResponsive={true}
+          />
+        </div>
 
         <div className="space-y-6">
           {articles.map((article) => (

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Metadata } from 'next';
+import GoogleAdSense from '@/components/GoogleAdSense';
 
 export const metadata: Metadata = {
   title: 'WebCodecs: Browser-Based Video Processing | Convert Videos Free',
@@ -167,6 +168,14 @@ export default function WebCodecsArticle() {
               For a 1GB video on a 50Mbps connection, upload alone takes about 3 minutes. With WebCodecs, that time is eliminated entirely.
             </p>
 
+            <div className="my-8">
+              <GoogleAdSense
+                dataAdSlot="XXXXXXXXXX"
+                dataAdFormat="auto"
+                dataFullWidthResponsive={true}
+              />
+            </div>
+
             <h2 className="text-2xl font-bold text-gray-900 mt-10 mb-4">Browser Support</h2>
 
             <p className="text-gray-700 mb-4">
@@ -257,6 +266,14 @@ export default function WebCodecsArticle() {
             <p className="text-gray-700">
               Want to see WebCodecs in action? <Link href="/" className="text-blue-600 hover:underline font-medium">Try Convert Videos Free</Link>—convert any video directly in your browser.
             </p>
+          </div>
+
+          <div className="my-8">
+            <GoogleAdSense
+              dataAdSlot="YYYYYYYYYY"
+              dataAdFormat="auto"
+              dataFullWidthResponsive={true}
+            />
           </div>
 
           <div className="mt-12 pt-8 border-t border-gray-100">

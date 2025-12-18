@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Metadata } from 'next';
+import GoogleAdSense from '@/components/GoogleAdSense';
 
 export const metadata: Metadata = {
   title: 'Video Formats Explained: MP4, MOV, WebM, MKV | Convert Videos Free',
@@ -162,6 +163,14 @@ export default function VideoFormatsArticle() {
               <span className="font-semibold">When to use WebM:</span> Web development when you need a royalty-free format and can provide MP4 fallback. Popular for web animations and screen recordings.
             </p>
 
+            <div className="my-8">
+              <GoogleAdSense
+                dataAdSlot="XXXXXXXXXX"
+                dataAdFormat="auto"
+                dataFullWidthResponsive={true}
+              />
+            </div>
+
             <h2 className="text-2xl font-bold text-gray-900 mt-10 mb-4">MKV</h2>
 
             <p className="text-sm text-gray-500 uppercase tracking-wide mb-2">The flexible container</p>
@@ -290,6 +299,14 @@ export default function VideoFormatsArticle() {
             <p className="text-gray-700">
               Need to convert between formats? <Link href="/" className="text-blue-600 hover:underline font-medium">Convert Videos Free</Link> handles any video to MP4, directly in your browser.
             </p>
+          </div>
+
+          <div className="my-8">
+            <GoogleAdSense
+              dataAdSlot="YYYYYYYYYY"
+              dataAdFormat="auto"
+              dataFullWidthResponsive={true}
+            />
           </div>
 
           <div className="mt-12 pt-8 border-t border-gray-100">
