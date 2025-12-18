@@ -33,22 +33,27 @@ fi
 
 # Step 2: Pull latest code on server
 echo ""
-echo "[2/5] Pulling latest code on server..."
+echo "[2/6] Pulling latest code on server..."
 ssh "$SERVER" "cd $REMOTE_DIR && git pull"
 
 # Step 3: Stop and remove current container
 echo ""
-echo "[3/5] Stopping current container..."
+echo "[3/6] Stopping current container..."
 ssh "$SERVER" "docker rm -f $CONTAINER_NAME 2>/dev/null || true"
 
-# Step 4: Rebuild Docker image
+# Step 4: Clean up Docker to free space
 echo ""
-echo "[4/5] Rebuilding Docker image..."
+echo "[4/6] Cleaning up old Docker images..."
+ssh "$SERVER" "docker system prune -af"
+
+# Step 5: Rebuild Docker image
+echo ""
+echo "[5/6] Rebuilding Docker image..."
 ssh "$SERVER" "cd $REMOTE_DIR && docker build --no-cache -t $IMAGE_NAME ."
 
-# Step 5: Start new container
+# Step 6: Start new container
 echo ""
-echo "[5/5] Starting new container..."
+echo "[6/6] Starting new container..."
 ssh "$SERVER" "docker run -d \
     --name $CONTAINER_NAME \
     --restart unless-stopped \
