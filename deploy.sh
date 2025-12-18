@@ -36,10 +36,11 @@ echo ""
 echo "[2/6] Pulling latest code on server..."
 ssh "$SERVER" "cd $REMOTE_DIR && git pull"
 
-# Step 3: Stop and remove current container
+# Step 3: Stop and remove ALL containers
 echo ""
-echo "[3/6] Stopping current container..."
-ssh "$SERVER" "docker rm -f $CONTAINER_NAME 2>/dev/null || true"
+echo "[3/6] Stopping all containers..."
+ssh "$SERVER" "docker stop \$(docker ps -aq) 2>/dev/null || true"
+ssh "$SERVER" "docker rm \$(docker ps -aq) 2>/dev/null || true"
 
 # Step 4: Clean up Docker to free space
 echo ""
