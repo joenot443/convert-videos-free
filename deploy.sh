@@ -9,6 +9,8 @@ set -e  # Exit on any error
 SERVER="root@165.227.44.1"
 REMOTE_DIR="~/convert-videos-free"
 LOCAL_DIR="$(dirname "$0")"
+CONTAINER_NAME="convert-videos-free"
+IMAGE_NAME="convert-videos-free"
 
 cd "$LOCAL_DIR"
 
@@ -34,26 +36,33 @@ echo ""
 echo "[2/5] Pulling latest code on server..."
 ssh "$SERVER" "cd $REMOTE_DIR && git pull"
 
-# Step 3: Stop current container
+# Step 3: Stop and remove current container
 echo ""
 echo "[3/5] Stopping current container..."
-ssh "$SERVER" "cd $REMOTE_DIR && docker-compose down || true"
+ssh "$SERVER" "docker stop $CONTAINER_NAME 2>/dev/null || true"
+ssh "$SERVER" "docker rm $CONTAINER_NAME 2>/dev/null || true"
 
 # Step 4: Rebuild Docker image
 echo ""
 echo "[4/5] Rebuilding Docker image..."
-ssh "$SERVER" "cd $REMOTE_DIR && docker-compose build --no-cache"
+ssh "$SERVER" "cd $REMOTE_DIR && docker build --no-cache -t $IMAGE_NAME ."
 
 # Step 5: Start new container
 echo ""
 echo "[5/5] Starting new container..."
-ssh "$SERVER" "cd $REMOTE_DIR && docker-compose up -d"
+ssh "$SERVER" "docker run -d \
+    --name $CONTAINER_NAME \
+    --restart unless-stopped \
+    -p 4444:4444 \
+    -e NODE_ENV=production \
+    -e NEXT_TELEMETRY_DISABLED=1 \
+    $IMAGE_NAME"
 
 # Verify deployment
 echo ""
 echo "Verifying deployment..."
 sleep 3
-ssh "$SERVER" "cd $REMOTE_DIR && docker-compose ps"
+ssh "$SERVER" "docker ps --filter name=$CONTAINER_NAME"
 
 echo ""
 echo "=========================================="
