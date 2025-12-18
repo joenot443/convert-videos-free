@@ -185,6 +185,9 @@ export function ConverterContainer() {
         <div className="mt-6 sm:mt-8 pt-5 border-t border-gray-200/50">
           <div className="flex flex-col items-center space-y-3">
             <nav className="flex flex-wrap items-center justify-center gap-6 text-sm">
+              <a href="/blog" className="text-gray-600 hover:text-blue-600 transition-colors">
+                Blog
+              </a>
               <a href="/about" className="text-gray-600 hover:text-blue-600 transition-colors">
                 About
               </a>

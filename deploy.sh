@@ -39,8 +39,7 @@ ssh "$SERVER" "cd $REMOTE_DIR && git pull"
 # Step 3: Stop and remove current container
 echo ""
 echo "[3/5] Stopping current container..."
-ssh "$SERVER" "docker stop $CONTAINER_NAME 2>/dev/null || true"
-ssh "$SERVER" "docker rm $CONTAINER_NAME 2>/dev/null || true"
+ssh "$SERVER" "docker rm -f $CONTAINER_NAME 2>/dev/null || true"
 
 # Step 4: Rebuild Docker image
 echo ""
