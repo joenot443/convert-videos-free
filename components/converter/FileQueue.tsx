@@ -1,6 +1,7 @@
 'use client';
 
 import { useConverterStore } from '@/lib/store/useConverterStore';
+import { useDictionary } from '@/components/providers/DictionaryProvider';
 import { QueueItem } from './QueueItem';
 import { ConversionQueueManager } from '@/lib/conversion/ConversionQueueManager';
 import { Play, Pause, StopCircle, Package, Trash2, Sparkles } from 'lucide-react';
@@ -15,6 +16,9 @@ export function FileQueue() {
     pauseProcessing,
     resumeProcessing,
   } = useConverterStore();
+
+  const { dictionary } = useDictionary();
+  const d = dictionary.queue;
 
   const queueManager = ConversionQueueManager.getInstance();
 
@@ -45,8 +49,8 @@ export function FileQueue() {
           <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200/50 rounded-2xl flex items-center justify-center mx-auto mb-3">
             <Package className="w-8 h-8 text-gray-500" />
           </div>
-          <p className="text-base font-semibold text-gray-900 mb-1">No files in queue</p>
-          <p className="text-sm text-gray-600">Add videos above to start converting</p>
+          <p className="text-base font-semibold text-gray-900 mb-1">{d.noFiles}</p>
+          <p className="text-sm text-gray-600">{d.addVideos}</p>
         </div>
       </div>
     );
@@ -60,7 +64,7 @@ export function FileQueue() {
           <div>
             <h3 className="font-bold text-gray-800 text-base sm:text-lg flex items-center gap-2">
               <Package className="w-5 h-5 text-gray-600" />
-              Queue
+              {d.title}
               <span className="px-2 py-0.5 bg-white rounded-full text-sm font-medium text-gray-600 shadow-sm">
                 {queue.length}
               </span>
@@ -69,19 +73,19 @@ export function FileQueue() {
               {pendingCount > 0 && (
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
-                  {pendingCount} pending
+                  {pendingCount} {d.pending}
                 </span>
               )}
               {processingCount > 0 && (
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                  {processingCount} processing
+                  {processingCount} {d.processing}
                 </span>
               )}
               {completedCount > 0 && (
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                  {completedCount} completed
+                  {completedCount} {d.completed}
                 </span>
               )}
             </div>
@@ -91,7 +95,7 @@ export function FileQueue() {
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors font-medium"
           >
             <Trash2 className="w-3.5 h-3.5" />
-            Clear All
+            {d.clearAll}
           </button>
         </div>
 
@@ -119,7 +123,7 @@ export function FileQueue() {
               className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-semibold rounded-xl hover:from-blue-600 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 shadow-lg shadow-blue-200/40 hover:shadow-xl hover:shadow-blue-200/50 transform hover:-translate-y-0.5"
             >
               <Play className="w-4 h-4" />
-              Start Processing
+              {d.startProcessing}
             </button>
           ) : (
             <>
@@ -130,7 +134,7 @@ export function FileQueue() {
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-sm font-medium rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                 >
                   <Play className="w-4 h-4" />
-                  Resume
+                  {d.resume}
                 </button>
               ) : (
                 <button
@@ -139,7 +143,7 @@ export function FileQueue() {
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-yellow-500 to-amber-600 text-white text-sm font-medium rounded-lg hover:from-yellow-600 hover:to-amber-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                 >
                   <Pause className="w-4 h-4" />
-                  Pause
+                  {d.pause}
                 </button>
               )}
               <button
@@ -149,7 +153,7 @@ export function FileQueue() {
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-red-500 to-rose-600 text-white text-sm font-medium rounded-lg hover:from-red-600 hover:to-rose-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
               >
                 <StopCircle className="w-4 h-4" />
-                Cancel Current
+                {d.cancelCurrent}
               </button>
             </>
           )}

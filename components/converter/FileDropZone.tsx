@@ -2,6 +2,7 @@
 
 import { useState, useRef, DragEvent, ChangeEvent } from 'react';
 import { useConverterStore } from '@/lib/store/useConverterStore';
+import { useDictionary } from '@/components/providers/DictionaryProvider';
 import { clsx } from 'clsx';
 import { Upload, Video, Plus, AlertCircle } from 'lucide-react';
 
@@ -14,6 +15,8 @@ export function FileDropZone() {
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { dictionary } = useDictionary();
+  const d = dictionary.dropzone;
 
   const { addFiles, queue } = useConverterStore();
 
@@ -54,12 +57,12 @@ export function FileDropZone() {
     // Check queue limit
     const remainingSlots = MAX_FILES - queue.length;
     if (remainingSlots <= 0) {
-      setError('Queue is full. Maximum 10 files allowed.');
+      setError(d.queueFull);
       return;
     }
 
     if (files.length > remainingSlots) {
-      setError(`Can only add ${remainingSlots} more file(s) to the queue.`);
+      setError(d.canOnlyAdd.replace('{count}', String(remainingSlots)));
       files = files.slice(0, remainingSlots);
     }
 
@@ -73,13 +76,13 @@ export function FileDropZone() {
                          ALLOWED_EXTENSIONS.some(ext => file.name.toLowerCase().endsWith(ext));
 
       if (!isValidType) {
-        errors.push(`${file.name}: Unsupported format`);
+        errors.push(`${file.name}: ${d.unsupportedFormat}`);
         return;
       }
 
       // Check file size
       if (file.size > MAX_FILE_SIZE) {
-        errors.push(`${file.name}: Exceeds 2GB limit`);
+        errors.push(`${file.name}: ${d.exceedsLimit}`);
         return;
       }
 
@@ -133,7 +136,7 @@ export function FileDropZone() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
               <div className="flex items-center gap-2">
                 <Video className="w-5 h-5 text-blue-600" />
-                <span className="text-sm sm:text-base font-medium text-gray-700">{queue.length} file(s) selected</span>
+                <span className="text-sm sm:text-base font-medium text-gray-700">{queue.length} {d.filesSelected}</span>
               </div>
               <button
                 onClick={(e) => {
@@ -143,7 +146,7 @@ export function FileDropZone() {
                 className="inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-medium shadow-sm"
               >
                 <Plus className="w-4 h-4" />
-                Add More Files
+                {d.addMore}
               </button>
             </div>
           </div>
@@ -161,18 +164,18 @@ export function FileDropZone() {
               )}
             </div>
             <p className="text-base sm:text-lg font-semibold text-gray-900 mb-1">
-              {isDragging ? 'Drop files to add to queue' : 'Drop videos here to convert'}
+              {isDragging ? d.dropToAdd : d.dropToConvert}
             </p>
             <p className="text-sm text-gray-600 mb-3">
-              or
+              {d.or}
               <button className="text-blue-600 hover:text-blue-700 font-semibold mx-1 underline-offset-2 hover:underline transition-colors">
-                browse
+                {d.browse}
               </button>
-              from your computer
+              {d.fromComputer}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3 text-xs">
-              <span className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-md font-medium">MP4 • MOV • WebM • MKV • AVI</span>
-              <span className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-md font-medium">Max 2GB per file</span>
+              <span className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-md font-medium">{d.formats}</span>
+              <span className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-md font-medium">{d.maxSize}</span>
             </div>
           </div>
         )}

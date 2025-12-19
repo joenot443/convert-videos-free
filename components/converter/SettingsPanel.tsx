@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useConverterStore } from '@/lib/store/useConverterStore';
+import { useDictionary } from '@/components/providers/DictionaryProvider';
 import { QualityPreset, ResolutionCap } from '@/lib/store/types';
 import { clsx } from 'clsx';
 import { Settings, ChevronUp, ChevronDown } from 'lucide-react';
@@ -9,19 +10,30 @@ import { Settings, ChevronUp, ChevronDown } from 'lucide-react';
 export function SettingsPanel() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { globalSettings, updateGlobalSettings } = useConverterStore();
+  const { dictionary } = useDictionary();
+  const d = dictionary.settings;
 
   const qualityOptions: { value: QualityPreset; label: string; description: string }[] = [
-    { value: 'low', label: 'Low', description: '2 Mbps' },
-    { value: 'medium', label: 'Medium', description: '5 Mbps' },
-    { value: 'high', label: 'High', description: '10 Mbps' },
+    { value: 'low', label: d.low, description: '2 Mbps' },
+    { value: 'medium', label: d.medium, description: '5 Mbps' },
+    { value: 'high', label: d.high, description: '10 Mbps' },
   ];
 
   const resolutionOptions: { value: ResolutionCap; label: string }[] = [
-    { value: 'original', label: 'Original' },
+    { value: 'original', label: d.original },
     { value: '1080p', label: '1080p (1920×1080)' },
     { value: '720p', label: '720p (1280×720)' },
     { value: '480p', label: '480p (854×480)' },
   ];
+
+  const getQualityLabel = (quality: QualityPreset) => {
+    switch (quality) {
+      case 'low': return d.low;
+      case 'medium': return d.medium;
+      case 'high': return d.high;
+      default: return d.medium;
+    }
+  };
 
   return (
     <div data-testid="settings-panel" className="bg-white/60 backdrop-blur-sm border border-gray-300/60 rounded-2xl shadow-lg shadow-gray-200/20 overflow-hidden">
@@ -36,25 +48,25 @@ export function SettingsPanel() {
           <div className="flex-1">
             {isCollapsed ? (
               <div className="flex items-center flex-wrap gap-x-4 gap-y-1">
-                <span className="font-semibold text-gray-900 text-sm">Settings</span>
+                <span className="font-semibold text-gray-900 text-sm">{d.title}</span>
                 <div className="flex items-center gap-3 text-xs">
                   <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md font-medium">
-                    {globalSettings.quality === 'low' ? 'Low' : globalSettings.quality === 'medium' ? 'Medium' : 'High'}
+                    {getQualityLabel(globalSettings.quality)}
                   </span>
                   <span className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded-md font-medium">
-                    {globalSettings.resolution === 'original' ? 'Original' : globalSettings.resolution}
+                    {globalSettings.resolution === 'original' ? d.original : globalSettings.resolution}
                   </span>
                   <span className={`px-2 py-0.5 rounded-md font-medium ${
                     globalSettings.autoDownload
                       ? 'bg-green-50 text-green-700'
                       : 'bg-gray-100 text-gray-600'
                   }`}>
-                    Auto-download {globalSettings.autoDownload ? 'on' : 'off'}
+                    {d.autoDownload} {globalSettings.autoDownload ? d.on : d.off}
                   </span>
                 </div>
               </div>
             ) : (
-              <h3 className="font-semibold text-gray-900 text-sm">Settings</h3>
+              <h3 className="font-semibold text-gray-900 text-sm">{d.title}</h3>
             )}
           </div>
         </div>
@@ -73,7 +85,7 @@ export function SettingsPanel() {
           {/* Quality Settings */}
           <div>
             <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
-              Video Quality
+              {d.videoQuality}
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {qualityOptions.map(option => (
@@ -105,7 +117,7 @@ export function SettingsPanel() {
               htmlFor="resolution-select"
               className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2"
             >
-              Maximum Resolution
+              {d.maxResolution}
             </label>
             <select
               id="resolution-select"
@@ -133,8 +145,8 @@ export function SettingsPanel() {
                 className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
               />
               <div className="flex-1">
-                <span className="text-sm font-medium text-gray-700">Auto-download</span>
-                <span className="block text-xs text-gray-500">Automatically save files when conversion completes</span>
+                <span className="text-sm font-medium text-gray-700">{d.autoDownload}</span>
+                <span className="block text-xs text-gray-500">{d.autoDownloadDesc}</span>
               </div>
             </label>
 
@@ -147,8 +159,8 @@ export function SettingsPanel() {
                 className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
               />
               <div className="flex-1">
-                <span className="text-sm font-medium text-gray-700">Auto-cleanup</span>
-                <span className="block text-xs text-gray-500">Remove files from queue after download</span>
+                <span className="text-sm font-medium text-gray-700">{d.autoCleanup}</span>
+                <span className="block text-xs text-gray-500">{d.autoCleanupDesc}</span>
               </div>
             </label>
           </div>
