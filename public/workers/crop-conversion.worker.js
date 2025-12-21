@@ -78,6 +78,7 @@ async function convertWithCrop(req) {
 
     // Add crop if provided
     if (req.crop) {
+      console.log('Applying crop:', req.crop);
       videoOptions.crop = {
         left: req.crop.left,
         top: req.crop.top,
@@ -107,8 +108,26 @@ async function convertWithCrop(req) {
       };
     }
 
+    console.log('Conversion options:', JSON.stringify({
+      video: videoOptions,
+      audio: audioOptions,
+      trim: conversionOptions.trim,
+    }, null, 2));
+
     const conversion = await Conversion.init(conversionOptions);
     activeConversions.set(jobId, conversion);
+
+    // Log conversion info
+    console.log('Conversion initialized:', {
+      isValid: conversion.isValid,
+      videoTrack: !!conversion.videoTrack,
+      audioTrack: !!conversion.audioTrack,
+    });
+
+    // Check for discarded tracks
+    if (conversion.discardedTracks && conversion.discardedTracks.length > 0) {
+      console.warn('Discarded tracks:', conversion.discardedTracks);
+    }
 
     // Progress tracking
     conversion.onProgress = (progress) => {
@@ -116,7 +135,9 @@ async function convertWithCrop(req) {
     };
 
     // Execute conversion
+    console.log('Starting conversion execution...');
     await conversion.execute();
+    console.log('Conversion complete');
     activeConversions.delete(jobId);
 
     // Get result

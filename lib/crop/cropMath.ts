@@ -226,19 +226,46 @@ function constrainToAspectRatio(
 }
 
 /**
+ * Round to nearest even number (required for H.264 encoding)
+ */
+function roundToEven(n: number): number {
+  return Math.round(n / 2) * 2;
+}
+
+/**
  * Convert crop region from normalized to pixel values
+ * Ensures width and height are even numbers (required for H.264)
  */
 export function cropToPixels(
   crop: CropRegion,
   videoWidth: number,
   videoHeight: number
 ): { left: number; top: number; width: number; height: number } {
-  return {
-    left: Math.round(crop.x * videoWidth),
-    top: Math.round(crop.y * videoHeight),
-    width: Math.round(crop.width * videoWidth),
-    height: Math.round(crop.height * videoHeight),
-  };
+  // Calculate raw values
+  const rawLeft = crop.x * videoWidth;
+  const rawTop = crop.y * videoHeight;
+  const rawWidth = crop.width * videoWidth;
+  const rawHeight = crop.height * videoHeight;
+
+  // Round position to even (for some codecs) or just round normally
+  const left = roundToEven(rawLeft);
+  const top = roundToEven(rawTop);
+
+  // Ensure width and height are even (required for H.264)
+  let width = roundToEven(rawWidth);
+  let height = roundToEven(rawHeight);
+
+  // Ensure minimum dimensions (at least 2x2)
+  width = Math.max(2, width);
+  height = Math.max(2, height);
+
+  // Ensure crop doesn't exceed video bounds
+  const maxWidth = roundToEven(videoWidth - left);
+  const maxHeight = roundToEven(videoHeight - top);
+  width = Math.min(width, maxWidth);
+  height = Math.min(height, maxHeight);
+
+  return { left, top, width, height };
 }
 
 /**
