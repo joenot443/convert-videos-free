@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useCropStore } from '@/lib/crop/useCropStore';
 import { cropToPixels } from '@/lib/crop/cropMath';
 import { getCropConversionService, CropOptions, TrimOptions } from '@/lib/crop/CropConversionService';
+import { trackCrop } from '@/lib/analytics';
 import { Download, Loader2, X, CheckCircle } from 'lucide-react';
 
 type ExportState = 'idle' | 'converting' | 'done' | 'error';
@@ -14,6 +15,7 @@ export function ExportButton() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const [downloadData, setDownloadData] = useState<{ buffer: ArrayBuffer; filename: string } | null>(null);
+  const exportStartTime = useRef<number>(0);
 
   const { file, videoMeta, crop, trim, quality } = useCropStore();
 
@@ -32,6 +34,10 @@ export function ExportButton() {
     setProgress(0);
     setErrorMessage(null);
     setDownloadData(null);
+    exportStartTime.current = Date.now();
+
+    // Track export started
+    trackCrop.exportStarted(file.name, !isFullFrame, !isFullDuration);
 
     try {
       const service = getCropConversionService();
@@ -71,11 +77,16 @@ export function ExportButton() {
           onError: (error) => {
             setExportState('error');
             setErrorMessage(error);
+            // Track export failed
+            trackCrop.exportFailed(file.name, error);
           },
           onComplete: (result) => {
             setExportState('done');
             setProgress(1);
             setDownloadData(result);
+            // Track export completed
+            const processingTime = (Date.now() - exportStartTime.current) / 1000;
+            trackCrop.exportCompleted(file.name, processingTime);
           },
         }
       );
@@ -83,7 +94,10 @@ export function ExportButton() {
       setCurrentJobId(jobId);
     } catch (error) {
       setExportState('error');
-      setErrorMessage(error instanceof Error ? error.message : 'Export failed');
+      const errorMsg = error instanceof Error ? error.message : 'Export failed';
+      setErrorMessage(errorMsg);
+      // Track export failed
+      trackCrop.exportFailed(file.name, errorMsg);
     }
   }, [file, videoMeta, crop, trim, quality, isFullFrame, isFullDuration]);
 
@@ -109,6 +123,9 @@ export function ExportButton() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+
+    // Track download
+    trackCrop.downloaded(downloadData.filename);
 
     // Reset state after download
     setExportState('idle');

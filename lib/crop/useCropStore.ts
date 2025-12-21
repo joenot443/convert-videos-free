@@ -11,6 +11,7 @@ import {
   DEFAULT_CROP,
   getAspectRatioValue,
 } from './types';
+import { trackCrop } from '../analytics';
 
 interface CropStore {
   // File state
@@ -134,6 +135,12 @@ export const useCropStore = create<CropStore>((set, get) => ({
       trim: { start: 0, end: meta.duration },
       crop: initialCrop,
     });
+
+    // Track video loaded
+    const { file } = get();
+    if (file) {
+      trackCrop.videoLoaded(meta.filename, file.size, meta.duration);
+    }
   },
 
   clearFile: () => {
@@ -155,6 +162,9 @@ export const useCropStore = create<CropStore>((set, get) => ({
       exportError: null,
       outputBlob: null,
     });
+
+    // Track editor cleared
+    trackCrop.editorCleared();
   },
 
   // Crop actions
@@ -173,6 +183,10 @@ export const useCropStore = create<CropStore>((set, get) => ({
     const { crop, videoMeta } = get();
 
     set({ aspectRatio: ratio });
+
+    // Track aspect ratio change
+    const ratioLabel = typeof ratio === 'string' ? ratio : `${ratio.width}:${ratio.height}`;
+    trackCrop.aspectRatioChanged(ratioLabel);
 
     // Adjust crop to match new aspect ratio
     const ratioValue = getAspectRatioValue(ratio);
