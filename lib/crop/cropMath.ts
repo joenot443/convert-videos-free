@@ -106,13 +106,7 @@ function resizeFromCorner(
 
   // Apply aspect ratio constraint if set
   if (ratioValue !== null && videoMeta) {
-    const result = constrainToAspectRatio(
-      { x, y, width, height },
-      ratioValue,
-      videoMeta,
-      corner
-    );
-    return result;
+    return constrainToAspectRatio({ x, y, width, height }, ratioValue, videoMeta, OPPOSITE_CORNER[corner], 'larger');
   }
 
   return { x, y, width, height };
@@ -151,78 +145,54 @@ function resizeFromEdge(
 
   // Apply aspect ratio constraint if set
   if (ratioValue !== null && videoMeta) {
-    const anchorCorner = edge === 'n' || edge === 'w' ? 'se' : 'nw';
-    const result = constrainToAspectRatio(
-      { x, y, width, height },
-      ratioValue,
-      videoMeta,
-      anchorCorner
-    );
-    return result;
+    const anchor = edge === 'n' || edge === 'w' ? 'se' : 'nw';
+    const driver = edge === 'e' || edge === 'w' ? 'width' : 'height';
+    return constrainToAspectRatio({ x, y, width, height }, ratioValue, videoMeta, anchor, driver);
   }
 
   return { x, y, width, height };
 }
 
+type Anchor = 'nw' | 'ne' | 'sw' | 'se';
+
+const OPPOSITE_CORNER: Record<Anchor, Anchor> = { nw: 'se', ne: 'sw', sw: 'ne', se: 'nw' };
+
 /**
- * Constrain crop region to an aspect ratio
+ * Reshape a crop to an aspect ratio, keeping one corner fixed.
+ * `driver` says which dimension the user is controlling; the other one follows.
  */
 function constrainToAspectRatio(
   crop: CropRegion,
   targetRatio: number,
   videoMeta: VideoMetadata,
-  anchorCorner: 'nw' | 'ne' | 'sw' | 'se'
+  anchor: Anchor,
+  driver: 'width' | 'height' | 'larger'
 ): CropRegion {
-  const videoAspect = videoMeta.width / videoMeta.height;
+  // Width / height of the target shape, measured in normalized units.
+  const ratio = targetRatio * (videoMeta.height / videoMeta.width);
 
-  // Convert crop dimensions to pixel space to calculate actual aspect ratio
-  const cropPixelWidth = crop.width * videoMeta.width;
-  const cropPixelHeight = crop.height * videoMeta.height;
-  const currentRatio = cropPixelWidth / cropPixelHeight;
+  const anchorRight = anchor === 'ne' || anchor === 'se';
+  const anchorBottom = anchor === 'sw' || anchor === 'se';
+  const anchorX = anchorRight ? crop.x + crop.width : crop.x;
+  const anchorY = anchorBottom ? crop.y + crop.height : crop.y;
 
-  let newWidth = crop.width;
-  let newHeight = crop.height;
+  const fromWidth = crop.width;
+  const fromHeight = crop.height * ratio;
+  let width =
+    driver === 'width' ? fromWidth : driver === 'height' ? fromHeight : Math.max(fromWidth, fromHeight);
 
-  if (currentRatio > targetRatio) {
-    // Too wide, reduce width
-    const targetPixelWidth = cropPixelHeight * targetRatio;
-    newWidth = targetPixelWidth / videoMeta.width;
-  } else {
-    // Too tall, reduce height
-    const targetPixelHeight = cropPixelWidth / targetRatio;
-    newHeight = targetPixelHeight / videoMeta.height;
-  }
+  // Stay inside the frame on the sides that can move, and above the minimum size.
+  const maxWidth = Math.min(anchorRight ? anchorX : 1 - anchorX, (anchorBottom ? anchorY : 1 - anchorY) * ratio);
+  const minWidth = Math.max(MIN_CROP_SIZE, MIN_CROP_SIZE * ratio);
+  width = clamp(width, Math.min(minWidth, maxWidth), maxWidth);
+  const height = width / ratio;
 
-  // Adjust position based on anchor corner
-  let newX = crop.x;
-  let newY = crop.y;
-
-  switch (anchorCorner) {
-    case 'nw':
-      // Anchor top-left, expand/contract to bottom-right
-      break;
-    case 'ne':
-      // Anchor top-right
-      newX = crop.x + crop.width - newWidth;
-      break;
-    case 'sw':
-      // Anchor bottom-left
-      newY = crop.y + crop.height - newHeight;
-      break;
-    case 'se':
-      // Anchor bottom-right
-      newX = crop.x + crop.width - newWidth;
-      newY = crop.y + crop.height - newHeight;
-      break;
-  }
-
-  // Clamp to bounds
-  newX = clamp(newX, 0, 1 - newWidth);
-  newY = clamp(newY, 0, 1 - newHeight);
-  newWidth = clamp(newWidth, MIN_CROP_SIZE, 1 - newX);
-  newHeight = clamp(newHeight, MIN_CROP_SIZE, 1 - newY);
-
-  return { x: newX, y: newY, width: newWidth, height: newHeight };
+  return {
+    x: anchorRight ? anchorX - width : anchorX,
+    y: anchorBottom ? anchorY - height : anchorY,
+    width,
+    height,
+  };
 }
 
 /**
@@ -230,6 +200,10 @@ function constrainToAspectRatio(
  */
 function roundToEven(n: number): number {
   return Math.round(n / 2) * 2;
+}
+
+function floorToEven(n: number): number {
+  return Math.floor(n / 2) * 2;
 }
 
 /**
@@ -241,29 +215,13 @@ export function cropToPixels(
   videoWidth: number,
   videoHeight: number
 ): { left: number; top: number; width: number; height: number } {
-  // Calculate raw values
-  const rawLeft = crop.x * videoWidth;
-  const rawTop = crop.y * videoHeight;
-  const rawWidth = crop.width * videoWidth;
-  const rawHeight = crop.height * videoHeight;
+  // Sizes are rounded down near the far edges, so that an odd-sized video can
+  // never produce a crop that sticks out of the frame.
+  const left = Math.min(roundToEven(crop.x * videoWidth), floorToEven(videoWidth - 2));
+  const top = Math.min(roundToEven(crop.y * videoHeight), floorToEven(videoHeight - 2));
 
-  // Round position to even (for some codecs) or just round normally
-  const left = roundToEven(rawLeft);
-  const top = roundToEven(rawTop);
-
-  // Ensure width and height are even (required for H.264)
-  let width = roundToEven(rawWidth);
-  let height = roundToEven(rawHeight);
-
-  // Ensure minimum dimensions (at least 2x2)
-  width = Math.max(2, width);
-  height = Math.max(2, height);
-
-  // Ensure crop doesn't exceed video bounds
-  const maxWidth = roundToEven(videoWidth - left);
-  const maxHeight = roundToEven(videoHeight - top);
-  width = Math.min(width, maxWidth);
-  height = Math.min(height, maxHeight);
+  const width = clamp(roundToEven(crop.width * videoWidth), 2, floorToEven(videoWidth - left));
+  const height = clamp(roundToEven(crop.height * videoHeight), 2, floorToEven(videoHeight - top));
 
   return { left, top, width, height };
 }

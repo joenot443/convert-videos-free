@@ -4,7 +4,7 @@ import { useConverterStore } from '@/lib/store/useConverterStore';
 import { useDictionary } from '@/components/providers/DictionaryProvider';
 import { QueueItem } from './QueueItem';
 import { ConversionQueueManager } from '@/lib/conversion/ConversionQueueManager';
-import { Play, Pause, StopCircle, Package, Trash2, Sparkles } from 'lucide-react';
+import { Play, Pause, StopCircle, Package, Trash2 } from 'lucide-react';
 
 export function FileQueue() {
   const {
@@ -12,9 +12,6 @@ export function FileQueue() {
     isProcessing,
     isPaused,
     clearQueue,
-    startProcessing,
-    pauseProcessing,
-    resumeProcessing,
   } = useConverterStore();
 
   const { dictionary } = useDictionary();

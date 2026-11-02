@@ -12,12 +12,14 @@ import {
   getAspectRatioValue,
 } from './types';
 import { trackCrop } from '../analytics';
+import { saveBlob } from '../download';
 
 interface CropStore {
   // File state
   file: File | null;
   videoUrl: string | null;
   videoMeta: VideoMetadata | null;
+  loadError: string | null;
 
   // Crop state
   crop: CropRegion;
@@ -43,6 +45,7 @@ interface CropStore {
   setFile: (file: File | null) => void;
   setVideoMeta: (meta: VideoMetadata) => void;
   clearFile: () => void;
+  rejectFile: (error: string) => void;
 
   // Actions - Crop
   setCrop: (crop: CropRegion) => void;
@@ -76,6 +79,7 @@ export const useCropStore = create<CropStore>((set, get) => ({
   file: null,
   videoUrl: null,
   videoMeta: null,
+  loadError: null,
   crop: DEFAULT_CROP,
   aspectRatio: 'free',
   trim: { start: 0, end: 0 },
@@ -102,6 +106,7 @@ export const useCropStore = create<CropStore>((set, get) => ({
         file,
         videoUrl,
         videoMeta: null,
+        loadError: null,
         crop: DEFAULT_CROP,
         trim: { start: 0, end: 0 },
         aspectRatio: 'free',
@@ -139,7 +144,7 @@ export const useCropStore = create<CropStore>((set, get) => ({
     // Track video loaded
     const { file } = get();
     if (file) {
-      trackCrop.videoLoaded(meta.filename, file.size, meta.duration);
+      trackCrop.videoLoaded(file.size);
     }
   },
 
@@ -152,6 +157,7 @@ export const useCropStore = create<CropStore>((set, get) => ({
       file: null,
       videoUrl: null,
       videoMeta: null,
+      loadError: null,
       crop: DEFAULT_CROP,
       trim: { start: 0, end: 0 },
       aspectRatio: 'free',
@@ -165,6 +171,11 @@ export const useCropStore = create<CropStore>((set, get) => ({
 
     // Track editor cleared
     trackCrop.editorCleared();
+  },
+
+  rejectFile: (error: string) => {
+    get().clearFile();
+    set({ loadError: error });
   },
 
   // Crop actions
@@ -191,9 +202,6 @@ export const useCropStore = create<CropStore>((set, get) => ({
     // Adjust crop to match new aspect ratio
     const ratioValue = getAspectRatioValue(ratio);
     if (ratioValue === null || !videoMeta) return;
-
-    // Calculate video's pixel dimensions
-    const videoAspect = videoMeta.width / videoMeta.height;
 
     // Current crop in normalized space
     let newWidth = crop.width;
@@ -237,7 +245,7 @@ export const useCropStore = create<CropStore>((set, get) => ({
 
   // Trim actions
   setTrimStart: (start: number) => {
-    const { trim, videoMeta } = get();
+    const { trim } = get();
     const maxStart = Math.min(start, trim.end - 0.1); // Minimum 0.1s duration
     set({
       trim: {
@@ -327,15 +335,6 @@ export const useCropStore = create<CropStore>((set, get) => ({
   downloadOutput: () => {
     const { outputBlob, file } = get();
     if (!outputBlob || !file) return;
-
-    const outputName = file.name.replace(/\.[^/.]+$/, '') + '_cropped.mp4';
-    const url = URL.createObjectURL(outputBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = outputName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    saveBlob(outputBlob, file.name.replace(/\.[^/.]+$/, '') + '_cropped.mp4');
   },
 }));

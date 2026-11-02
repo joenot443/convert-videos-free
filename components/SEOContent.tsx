@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Zap, Shield, Globe, Download, Settings, FileVideo } from 'lucide-react';
+import { ChevronDown, ChevronUp, Zap, Shield, Globe, Download } from 'lucide-react';
 import { useDictionary } from '@/components/providers/DictionaryProvider';
 
 function FAQItem({ question, answer }: { question: string; answer: string }) {

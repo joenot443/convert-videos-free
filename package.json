@@ -3,10 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "sync:mediabunny": "cp node_modules/mediabunny/dist/bundles/mediabunny.cjs public/mediabunny.js",
+    "predev": "npm run sync:mediabunny",
     "dev": "next dev -p 4444",
+    "prebuild": "npm run sync:mediabunny",
     "build": "next build",
     "start": "next start -p 4444",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "pretest": "./tests/generate-fixtures.sh",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed"
@@ -14,21 +19,21 @@
   "dependencies": {
     "clsx": "^2.1.1",
     "lucide-react": "^0.561.0",
-    "mediabunny": "^1.26.0",
-    "next": "16.0.10",
-    "react": "19.2.1",
-    "react-dom": "19.2.1",
+    "mediabunny": "1.65.0",
+    "next": "16.4.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "zustand": "^5.0.9"
   },
   "devDependencies": {
-    "@playwright/test": "^1.57.0",
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.0.10",
-    "playwright": "^1.57.0",
+    "eslint-config-next": "16.4.3",
+    "playwright": "^1.64.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

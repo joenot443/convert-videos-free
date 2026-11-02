@@ -1,184 +1,98 @@
-// Crop Conversion Worker - handles video conversion with crop and trim support
-// Load mediabunny
-importScripts('/mediabunny.js');
-
-// The library is exposed as Mediabunny (capital M)
-const mediabunny = typeof Mediabunny !== 'undefined' ? Mediabunny : self.Mediabunny;
-
-if (!mediabunny) {
-  throw new Error('Failed to load mediabunny library');
-}
+// Crop and trim worker. Output is always MP4 (H.264 + AAC).
+importScripts('/mediabunny.js', '/workers/worker-common.js');
 
 const {
   ALL_FORMATS,
   BlobSource,
   BufferTarget,
-  Input,
-  Output,
-  Mp4OutputFormat,
   Conversion,
-  canEncode,
+  ConversionCanceledError,
+  Input,
+  Mp4OutputFormat,
+  Output,
   getFirstEncodableVideoCodec,
-  getFirstEncodableAudioCodec,
-} = mediabunny;
+} = Mediabunny;
 
-// Bitrate presets (in bits per second)
-const BITRATE_PRESETS = {
-  low: { video: 2_000_000, audio: 96_000 },
-  medium: { video: 5_000_000, audio: 128_000 },
-  high: { video: 10_000_000, audio: 192_000 },
-};
+// jobId -> { conversion, canceled }
+const jobs = new Map();
 
-// Active conversions for cancellation support
-const activeConversions = new Map();
-
-// Main conversion function with crop and trim support
 async function convertWithCrop(req) {
-  const jobId = req.jobId;
+  const { jobId } = req;
+  const job = { conversion: null, canceled: false };
+  jobs.set(jobId, job);
 
   try {
-    // Check WebCodecs availability
-    if (!('VideoEncoder' in globalThis)) {
-      throw new Error('WebCodecs not supported. Please use Chrome, Edge, or Safari.');
+    if (!('VideoEncoder' in self)) {
+      throw new Error('WebCodecs is required. Please use Chrome, Edge, or Safari.');
+    }
+    if (!(await getFirstEncodableVideoCodec(['avc']))) {
+      throw new Error('H.264 encoding is not available in this browser.');
     }
 
-    self.postMessage({ type: 'ready', jobId });
+    const input = new Input({ source: new BlobSource(req.file), formats: ALL_FORMATS });
+    if (!(await input.getPrimaryVideoTrack())) {
+      throw new Error('This file has no video track that can be converted.');
+    }
+    const hasAudio = !!(await input.getPrimaryAudioTrack());
+    const aacCodec = await getAacCodec(Mediabunny);
+    const bitrates = BITRATE_PRESETS[req.output.preset] || BITRATE_PRESETS.medium;
 
-    // Create Input from the file
-    const input = new Input({
-      source: new BlobSource(req.file),
-      formats: ALL_FORMATS,
-    });
-    await input.ready;
-
-    // Create Output
-    const mp4Format = new Mp4OutputFormat({ fastStart: 'in-memory' });
     const target = new BufferTarget();
-    const output = new Output({ format: mp4Format, target });
-
-    // Get codecs
-    const videoCodec = await getFirstEncodableVideoCodec(['avc']);
-    if (!videoCodec) {
-      throw new Error('No video codec available for encoding.');
-    }
-
-    const canAac = await canEncode('aac');
-    const audioCodec = canAac ? await getFirstEncodableAudioCodec(['aac']) : null;
-
-    // Get bitrates from preset
-    const { video: videoBitrate, audio: audioBitrate } = BITRATE_PRESETS[req.output.preset] || BITRATE_PRESETS.medium;
-
-    // Build video options with crop if provided
-    const videoOptions = {
-      codec: 'avc',
-      bitrate: videoBitrate,
-      keyFrameInterval: 2,
-      allowRotationMetadata: true,
-    };
-
-    // Add crop if provided
-    if (req.crop) {
-      console.log('Applying crop:', req.crop);
-      videoOptions.crop = {
-        left: req.crop.left,
-        top: req.crop.top,
-        width: req.crop.width,
-        height: req.crop.height,
-      };
-    }
-
-    // Build audio options
-    const audioOptions = audioCodec
-      ? { codec: 'aac', bitrate: audioBitrate, sampleRate: 48000, numberOfChannels: 2 }
-      : { discard: true };
-
-    // Build conversion options
-    const conversionOptions = {
+    const conversion = await Conversion.init({
       input,
-      output,
-      video: videoOptions,
-      audio: audioOptions,
-    };
-
-    // Add trim if provided
-    if (req.trim) {
-      conversionOptions.trim = {
-        start: req.trim.start,
-        end: req.trim.end,
-      };
-    }
-
-    console.log('Conversion options:', JSON.stringify({
-      video: videoOptions,
-      audio: audioOptions,
-      trim: conversionOptions.trim,
-    }, null, 2));
-
-    const conversion = await Conversion.init(conversionOptions);
-    activeConversions.set(jobId, conversion);
-
-    // Log conversion info
-    console.log('Conversion initialized:', {
-      isValid: conversion.isValid,
-      videoTrack: !!conversion.videoTrack,
-      audioTrack: !!conversion.audioTrack,
+      output: new Output({ format: new Mp4OutputFormat({ fastStart: 'in-memory' }), target }),
+      video: {
+        codec: 'avc',
+        bitrate: bitrates.video,
+        keyFrameInterval: 2,
+        ...(req.crop ? { crop: req.crop } : {}),
+      },
+      audio: aacCodec
+        ? { codec: 'aac', bitrate: bitrates.audio, sampleRate: 48000, numberOfChannels: 2 }
+        : { discard: true },
+      ...(req.trim ? { trim: req.trim } : {}),
+      showWarnings: false,
     });
 
-    // Check for discarded tracks
-    if (conversion.discardedTracks && conversion.discardedTracks.length > 0) {
-      console.warn('Discarded tracks:', conversion.discardedTracks);
+    job.conversion = conversion;
+    if (job.canceled) throw new ConversionCanceledError();
+    assertConvertible(conversion);
+
+    if (hasAudio && !aacCodec) {
+      self.postMessage({ type: 'warning', jobId, code: AUDIO_DROPPED_WARNING });
     }
 
-    // Progress tracking
     conversion.onProgress = (progress) => {
       self.postMessage({ type: 'progress', jobId, progress01: progress });
     };
-
-    // Execute conversion
-    console.log('Starting conversion execution...');
     await conversion.execute();
-    console.log('Conversion complete');
-    activeConversions.delete(jobId);
 
-    // Get result
     const buffer = target.buffer;
-    const inputName = req.file.name || 'video';
-    const outputName = inputName.replace(/\.[^/.]+$/, '') + '_cropped.mp4';
-
-    self.postMessage({
-      type: 'done',
-      jobId,
-      result: { buffer, mime: 'video/mp4', filename: outputName }
-    }, [buffer]);
-
+    const baseName = (req.file.name || 'video').replace(/\.[^/.]+$/, '');
+    self.postMessage(
+      { type: 'done', jobId, result: { buffer, mime: 'video/mp4', filename: `${baseName}_cropped.mp4` } },
+      [buffer]
+    );
   } catch (error) {
-    activeConversions.delete(jobId);
-    console.error('Crop conversion error:', error);
-
-    self.postMessage({
-      type: 'error',
-      jobId,
-      message: error.message || 'Conversion failed'
-    });
+    if (job.canceled || error instanceof ConversionCanceledError) {
+      self.postMessage({ type: 'canceled', jobId });
+    } else {
+      console.error('Crop conversion error:', error);
+      self.postMessage({ type: 'error', jobId, message: friendlyError(error) });
+    }
+  } finally {
+    jobs.delete(jobId);
   }
 }
 
-// Handle cancellation
-async function cancelConversion(jobId) {
-  const conversion = activeConversions.get(jobId);
-  if (conversion && conversion.cancel) {
-    await conversion.cancel();
-    activeConversions.delete(jobId);
-    self.postMessage({ type: 'canceled', jobId });
-  }
+async function cancel(jobId) {
+  const job = jobs.get(jobId);
+  if (!job) return;
+  job.canceled = true;
+  if (job.conversion) await job.conversion.cancel();
 }
 
-// Message handler
-self.addEventListener('message', async (event) => {
-  const req = event.data;
-  if (req.type === 'convert-crop') {
-    convertWithCrop(req);
-  } else if (req.type === 'cancel') {
-    cancelConversion(req.jobId);
-  }
+self.addEventListener('message', ({ data }) => {
+  if (data.type === 'convert-crop') convertWithCrop(data);
+  else if (data.type === 'cancel') cancel(data.jobId);
 });

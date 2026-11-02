@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useCallback, useEffect, useState } from 'react';
+import { useRef, useCallback } from 'react';
 import { useCropStore } from '@/lib/crop/useCropStore';
 import { useFilmstrip, formatTime } from '@/lib/crop/useFilmstrip';
 import { TrimHandle } from './TrimHandle';
@@ -11,10 +11,10 @@ interface TimelineProps {
 
 export function Timeline({ onSeek }: TimelineProps) {
   const timelineRef = useRef<HTMLDivElement>(null);
-  const [isDraggingPlayhead, setIsDraggingPlayhead] = useState(false);
 
   const {
     videoMeta,
+    videoUrl,
     trim,
     setTrimStart,
     setTrimEnd,
@@ -26,7 +26,7 @@ export function Timeline({ onSeek }: TimelineProps) {
 
   // Generate filmstrip thumbnails
   const { thumbnails, isGenerating } = useFilmstrip(
-    useCropStore.getState().videoUrl,
+    videoUrl,
     duration,
     { thumbnailCount: 20 }
   );
@@ -109,7 +109,6 @@ export function Timeline({ onSeek }: TimelineProps) {
     (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      setIsDraggingPlayhead(true);
 
       const handleMouseMove = (e: MouseEvent) => {
         const time = getTimeFromEvent(e);
@@ -118,7 +117,6 @@ export function Timeline({ onSeek }: TimelineProps) {
       };
 
       const handleMouseUp = () => {
-        setIsDraggingPlayhead(false);
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
       };

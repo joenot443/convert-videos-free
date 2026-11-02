@@ -6,8 +6,8 @@ import { useDictionary } from '@/components/providers/DictionaryProvider';
 import { clsx } from 'clsx';
 import { Upload, Video, Plus, AlertCircle } from 'lucide-react';
 
-const ALLOWED_TYPES = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-matroska', 'video/x-msvideo'];
-const ALLOWED_EXTENSIONS = ['.mp4', '.mov', '.webm', '.mkv', '.avi'];
+const ALLOWED_TYPES = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-matroska'];
+const ALLOWED_EXTENSIONS = ['.mp4', '.mov', '.webm', '.mkv'];
 const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024; // 2GB
 const MAX_FILES = 10;
 
@@ -89,13 +89,14 @@ export function FileDropZone() {
       validFiles.push(file);
     });
 
+    if (validFiles.length > 0) {
+      const { duplicates } = addFiles(validFiles);
+      errors.push(...duplicates.map(name => `${name}: ${d.alreadyInQueue}`));
+    }
+
     if (errors.length > 0) {
       setError(errors.join(', '));
       setTimeout(() => setError(null), 5000);
-    }
-
-    if (validFiles.length > 0) {
-      addFiles(validFiles);
     }
   };
 

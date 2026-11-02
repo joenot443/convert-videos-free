@@ -1,28 +1,24 @@
 'use client';
 
 import Script from 'next/script';
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 
 // Measurement IDs for different domains
 const GA_IDS = {
-  convert: 'G-HZRLNG135W',  // convertvideosfree.com
-  crop: 'G-2BVFWM6EXC',     // cropvideosfree.com
+  convert: 'G-HZRLNG135W', // convertvideosfree.com
+  crop: 'G-2BVFWM6EXC', // cropvideosfree.com
 };
 
+const subscribeToNothing = () => () => {};
+
 export default function GoogleAnalytics() {
-  const [measurementId, setMeasurementId] = useState<string | null>(null);
+  // The hostname is only known in the browser, so nothing renders on the server.
+  const measurementId = useSyncExternalStore(
+    subscribeToNothing,
+    () => (window.location.hostname.includes('cropvideosfree') ? GA_IDS.crop : GA_IDS.convert),
+    () => null
+  );
 
-  useEffect(() => {
-    // Determine which GA ID to use based on hostname
-    const hostname = window.location.hostname;
-    if (hostname.includes('cropvideosfree')) {
-      setMeasurementId(GA_IDS.crop);
-    } else {
-      setMeasurementId(GA_IDS.convert);
-    }
-  }, []);
-
-  // Don't render until we know which ID to use
   if (!measurementId) return null;
 
   return (

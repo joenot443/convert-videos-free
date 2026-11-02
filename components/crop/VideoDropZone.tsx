@@ -5,8 +5,8 @@ import { useCropStore } from '@/lib/crop/useCropStore';
 import { clsx } from 'clsx';
 import { Upload, Video, AlertCircle } from 'lucide-react';
 
-const ALLOWED_TYPES = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-matroska', 'video/x-msvideo'];
-const ALLOWED_EXTENSIONS = ['.mp4', '.mov', '.webm', '.mkv', '.avi'];
+const ALLOWED_TYPES = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-matroska'];
+const ALLOWED_EXTENSIONS = ['.mp4', '.mov', '.webm', '.mkv'];
 const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024; // 2GB
 
 export function VideoDropZone() {
@@ -14,7 +14,7 @@ export function VideoDropZone() {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { setFile } = useCropStore();
+  const { setFile, loadError } = useCropStore();
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -59,7 +59,7 @@ export function VideoDropZone() {
                        ALLOWED_EXTENSIONS.some(ext => file.name.toLowerCase().endsWith(ext));
 
     if (!isValidType) {
-      setError(`Unsupported format. Please use MP4, MOV, WebM, MKV, or AVI.`);
+      setError(`Unsupported format. Please use MP4, MOV, WebM, or MKV.`);
       return;
     }
 
@@ -124,7 +124,7 @@ export function VideoDropZone() {
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3 text-sm">
             <span className="px-3 py-1.5 bg-gray-800 text-gray-300 rounded-lg font-medium">
-              MP4, MOV, WebM, MKV, AVI
+              MP4, MOV, WebM, MKV
             </span>
             <span className="px-3 py-1.5 bg-gray-800 text-gray-300 rounded-lg font-medium">
               Max: 2GB
@@ -132,6 +132,13 @@ export function VideoDropZone() {
           </div>
         </div>
       </div>
+
+      {loadError && (
+        <div data-testid="video-load-error" className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
+          <span className="text-sm text-red-300">{loadError}</span>
+        </div>
+      )}
 
       {error && (
         <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-start gap-3">

@@ -15,19 +15,17 @@ export interface QueueItem {
   file: File;
   status: FileStatus;
   error?: string;
+  warning?: string; // Warning code from the worker, for example 'audioDropped'
   outputBlob?: Blob;
   outputSize?: number;
   compressionRatio?: number;
   addedAt: Date;
   startedAt?: Date;
   completedAt?: Date;
-  settings?: Partial<ConversionSettings>;
-  jobId?: string; // From ConversionService
 }
 
 export interface ProgressInfo {
   percent: number;
-  bytesProcessed: number;
   timeElapsed: number;
   estimatedTimeRemaining?: number;
 }

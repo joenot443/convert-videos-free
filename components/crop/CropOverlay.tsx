@@ -11,7 +11,6 @@ interface CropOverlayProps {
 }
 
 export function CropOverlay({ containerRef }: CropOverlayProps) {
-  const overlayRef = useRef<HTMLDivElement>(null);
   const [videoBounds, setVideoBounds] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
 
   const {
@@ -20,14 +19,6 @@ export function CropOverlay({ containerRef }: CropOverlayProps) {
     aspectRatio,
     videoMeta,
   } = useCropStore();
-
-  // Track drag state
-  const dragState = useRef<{
-    handle: DragHandle;
-    startX: number;
-    startY: number;
-    startCrop: typeof crop;
-  } | null>(null);
 
   // Calculate video display bounds on mount and resize
   useEffect(() => {
@@ -43,74 +34,49 @@ export function CropOverlay({ containerRef }: CropOverlayProps) {
     return () => window.removeEventListener('resize', updateBounds);
   }, [containerRef, videoMeta]);
 
-  // Handle drag move (defined first - no dependencies on other handlers)
-  const handleDragMove = useCallback((e: MouseEvent | TouchEvent) => {
-    if (!dragState.current || !videoBounds || !videoMeta) return;
+  // Listeners stay attached to the document for the length of one drag, so that
+  // the pointer can leave the crop box without ending it.
+  const stopDragging = useRef<(() => void) | null>(null);
+  useEffect(() => () => stopDragging.current?.(), []);
 
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-
-    // Calculate delta in pixels
-    const pixelDeltaX = clientX - dragState.current.startX;
-    const pixelDeltaY = clientY - dragState.current.startY;
-
-    // Convert to normalized coordinates
-    const deltaX = pixelDeltaX / videoBounds.width;
-    const deltaY = pixelDeltaY / videoBounds.height;
-
-    // Calculate new crop
-    const newCrop = calculateCropAfterDrag(
-      dragState.current.startCrop,
-      dragState.current.handle,
-      deltaX,
-      deltaY,
-      aspectRatio,
-      videoMeta
-    );
-
-    setCrop(newCrop);
-  }, [videoBounds, videoMeta, aspectRatio, setCrop]);
-
-  // Handle drag end (depends on handleDragMove)
-  const handleDragEnd = useCallback(() => {
-    dragState.current = null;
-    document.removeEventListener('mousemove', handleDragMove);
-    document.removeEventListener('mouseup', handleDragEnd);
-    document.removeEventListener('touchmove', handleDragMove);
-    document.removeEventListener('touchend', handleDragEnd);
-  }, [handleDragMove]);
-
-  // Handle drag start (depends on handleDragMove and handleDragEnd)
   const handleDragStart = useCallback((handle: DragHandle, e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!videoBounds || !videoMeta) return;
 
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const startX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const startY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const startCrop = { ...crop };
 
-    dragState.current = {
-      handle,
-      startX: clientX,
-      startY: clientY,
-      startCrop: { ...crop },
+    const onMove = (event: MouseEvent | TouchEvent) => {
+      const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX;
+      const clientY = 'touches' in event ? event.touches[0].clientY : event.clientY;
+      setCrop(
+        calculateCropAfterDrag(
+          startCrop,
+          handle,
+          (clientX - startX) / videoBounds.width,
+          (clientY - startY) / videoBounds.height,
+          aspectRatio,
+          videoMeta
+        )
+      );
     };
 
-    // Add document-level event listeners
-    document.addEventListener('mousemove', handleDragMove);
-    document.addEventListener('mouseup', handleDragEnd);
-    document.addEventListener('touchmove', handleDragMove);
-    document.addEventListener('touchend', handleDragEnd);
-  }, [crop, handleDragMove, handleDragEnd]);
-
-  // Clean up event listeners on unmount
-  useEffect(() => {
-    return () => {
-      document.removeEventListener('mousemove', handleDragMove);
-      document.removeEventListener('mouseup', handleDragEnd);
-      document.removeEventListener('touchmove', handleDragMove);
-      document.removeEventListener('touchend', handleDragEnd);
+    const stop = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', stop);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', stop);
+      stopDragging.current = null;
     };
-  }, [handleDragMove, handleDragEnd]);
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', stop);
+    document.addEventListener('touchmove', onMove);
+    document.addEventListener('touchend', stop);
+    stopDragging.current = stop;
+  }, [crop, videoBounds, videoMeta, aspectRatio, setCrop]);
 
   if (!videoBounds || !videoMeta) return null;
 
@@ -150,7 +116,6 @@ export function CropOverlay({ containerRef }: CropOverlayProps) {
 
   return (
     <div
-      ref={overlayRef}
       data-testid="crop-overlay"
       className="absolute inset-0 pointer-events-none"
     >
@@ -170,7 +135,7 @@ export function CropOverlay({ containerRef }: CropOverlayProps) {
 
       {/* Crop box border */}
       <div
-        className="absolute border-2 border-white pointer-events-auto"
+        className="absolute border-2 border-white pointer-events-auto touch-none"
         style={{
           left: cropLeft,
           top: cropTop,

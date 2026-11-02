@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
+import Link from 'next/link';
 import { FileDropZone } from './FileDropZone';
 import { SettingsPanel } from './SettingsPanel';
 import { FileQueue } from './FileQueue';
@@ -18,36 +19,17 @@ interface ConverterContainerProps {
   dictionary?: Dictionary;
 }
 
+const subscribeToNothing = () => () => {};
+
 export function ConverterContainer({ lang = defaultLocale, dictionary = en }: ConverterContainerProps) {
-  const [isSupported, setIsSupported] = useState<boolean | null>(null);
-  const [supportMessage, setSupportMessage] = useState<string>('');
   const d = dictionary;
 
-  useEffect(() => {
-    // Check browser support
-    const support = ConversionService.checkSupport();
-    setIsSupported(support.supported);
-    if (!support.supported && support.message) {
-      setSupportMessage(support.message);
-    }
-  }, []);
-
-  // Get base path for links
-  const basePath = lang === defaultLocale ? '' : `/${lang}`;
-
-  if (isSupported === null) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-pulse">
-            <div className="inline-block w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-            <p className="text-lg font-medium text-gray-700">Checking browser compatibility...</p>
-            <p className="text-sm text-gray-500 mt-2">Loading video codecs</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Assume support on the server, so that it renders the real page.
+  const isSupported = useSyncExternalStore(
+    subscribeToNothing,
+    () => ConversionService.checkSupport().supported,
+    () => true
+  );
 
   if (!isSupported) {
     return (
@@ -63,7 +45,7 @@ export function ConverterContainer({ lang = defaultLocale, dictionary = en }: Co
               {d.errors.unsupportedBrowser}
             </h2>
             <p className="text-gray-600 mb-4 text-center">
-              {supportMessage || d.errors.unsupportedBrowserMessage}
+              {d.errors.unsupportedBrowserMessage}
             </p>
             <div className="bg-gray-50 rounded-lg p-4">
               <p className="text-sm font-semibold text-gray-700 mb-2">
@@ -173,22 +155,45 @@ export function ConverterContainer({ lang = defaultLocale, dictionary = en }: Co
           {/* SEO Content */}
           <SEOContent />
 
+          {/* Tools We Love */}
+          <div className="mt-8 pt-6 border-t border-gray-200/50">
+            <h3 className="text-center text-lg font-semibold text-gray-700 mb-5">{d.tools.heading}</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+              <a href="https://cropvideosfree.com" target="_blank" rel="noopener noreferrer" className="group p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                <div className="font-medium text-gray-700 group-hover:text-blue-600">Crop Videos Free</div>
+                <div className="text-xs text-gray-500">{d.tools.crop}</div>
+              </a>
+              <a href="https://nottawa.app" target="_blank" rel="noopener noreferrer" className="group p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                <div className="font-medium text-gray-700 group-hover:text-blue-600">Nottawa</div>
+                <div className="text-xs text-gray-500">{d.tools.nottawa}</div>
+              </a>
+              <a href="https://www.hex2oklch.com" target="_blank" rel="noopener noreferrer" className="group p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                <div className="font-medium text-gray-700 group-hover:text-blue-600">Hex to OKLCH</div>
+                <div className="text-xs text-gray-500">{d.tools.hex}</div>
+              </a>
+              <a href="https://convertvideosfree.com" target="_blank" rel="noopener noreferrer" className="group p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                <div className="font-medium text-gray-700 group-hover:text-blue-600">Convert Videos Free</div>
+                <div className="text-xs text-gray-500">{d.tools.convert}</div>
+              </a>
+            </div>
+          </div>
+
           {/* Footer */}
           <div className="mt-6 sm:mt-8 pt-5 border-t border-gray-200/50">
             <div className="flex flex-col items-center space-y-3">
               <nav className="flex flex-wrap items-center justify-center gap-6 text-sm">
-                <a href="/blog" className="text-gray-600 hover:text-blue-600 transition-colors">
+                <Link href="/blog" className="text-gray-600 hover:text-blue-600 transition-colors">
                   {d.footer.blog}
-                </a>
-                <a href={`${basePath}/about`} className="text-gray-600 hover:text-blue-600 transition-colors">
+                </Link>
+                <Link href="/about" className="text-gray-600 hover:text-blue-600 transition-colors">
                   {d.footer.about}
-                </a>
-                <a href={`${basePath}/privacy`} className="text-gray-600 hover:text-blue-600 transition-colors">
+                </Link>
+                <Link href="/privacy" className="text-gray-600 hover:text-blue-600 transition-colors">
                   {d.footer.privacy}
-                </a>
-                <a href={`${basePath}/terms`} className="text-gray-600 hover:text-blue-600 transition-colors">
+                </Link>
+                <Link href="/terms" className="text-gray-600 hover:text-blue-600 transition-colors">
                   {d.footer.terms}
-                </a>
+                </Link>
                 <a href="https://joecrozier.ca" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-blue-600 transition-colors">
                   {d.footer.developer}
                 </a>

@@ -1,8 +1,11 @@
-// Google Analytics helper functions
+// Google Analytics helper functions.
+//
+// The site promises that files stay on the user's device, so nothing here may
+// ever receive a file name or anything derived from one.
 
 declare global {
   interface Window {
-    gtag?: (...args: any[]) => void;
+    gtag?: (...args: unknown[]) => void;
   }
 }
 
@@ -24,20 +27,20 @@ export const trackEvent = (
 
 // Track conversion events
 export const trackConversion = {
-  started: (fileName: string, fileSize: number) => {
-    trackEvent('conversion_started', 'Conversion', fileName, Math.round(fileSize / 1024 / 1024)); // Size in MB
+  started: (fileSize: number) => {
+    trackEvent('conversion_started', 'Conversion', undefined, Math.round(fileSize / 1024 / 1024)); // Size in MB
   },
 
-  completed: (fileName: string, processingTime: number) => {
-    trackEvent('conversion_completed', 'Conversion', fileName, Math.round(processingTime));
+  completed: (processingTime: number) => {
+    trackEvent('conversion_completed', 'Conversion', undefined, Math.round(processingTime));
   },
 
-  failed: (fileName: string, error: string) => {
-    trackEvent('conversion_failed', 'Conversion', `${fileName}: ${error}`);
+  failed: (error: string) => {
+    trackEvent('conversion_failed', 'Conversion', error);
   },
 
-  downloaded: (fileName: string) => {
-    trackEvent('file_downloaded', 'Download', fileName);
+  downloaded: () => {
+    trackEvent('file_downloaded', 'Download');
   },
 };
 
@@ -59,8 +62,8 @@ export const trackUI = {
     trackEvent('files_added', 'UI', `${count} files`, totalSizeMB);
   },
 
-  fileRemoved: (fileName: string) => {
-    trackEvent('file_removed', 'UI', fileName);
+  fileRemoved: () => {
+    trackEvent('file_removed', 'UI');
   },
 
   queueCleared: () => {
@@ -83,8 +86,8 @@ export const trackUI = {
 // Track crop feature events
 export const trackCrop = {
   // Video loaded into crop editor
-  videoLoaded: (fileName: string, fileSize: number, duration: number) => {
-    trackEvent('crop_video_loaded', 'Crop', fileName, Math.round(fileSize / 1024 / 1024));
+  videoLoaded: (fileSize: number) => {
+    trackEvent('crop_video_loaded', 'Crop', undefined, Math.round(fileSize / 1024 / 1024));
   },
 
   // Aspect ratio changed
@@ -104,24 +107,24 @@ export const trackCrop = {
   },
 
   // Export started
-  exportStarted: (fileName: string, hasCrop: boolean, hasTrim: boolean) => {
+  exportStarted: (hasCrop: boolean, hasTrim: boolean) => {
     const operations = [hasCrop ? 'crop' : null, hasTrim ? 'trim' : null].filter(Boolean).join('+') || 'none';
-    trackEvent('crop_export_started', 'Crop', `${fileName} (${operations})`);
+    trackEvent('crop_export_started', 'Crop', operations);
   },
 
   // Export completed
-  exportCompleted: (fileName: string, processingTime: number) => {
-    trackEvent('crop_export_completed', 'Crop', fileName, Math.round(processingTime));
+  exportCompleted: (processingTime: number) => {
+    trackEvent('crop_export_completed', 'Crop', undefined, Math.round(processingTime));
   },
 
   // Export failed
-  exportFailed: (fileName: string, error: string) => {
-    trackEvent('crop_export_failed', 'Crop', `${fileName}: ${error}`);
+  exportFailed: (error: string) => {
+    trackEvent('crop_export_failed', 'Crop', error);
   },
 
   // Video downloaded
-  downloaded: (fileName: string) => {
-    trackEvent('crop_file_downloaded', 'Crop', fileName);
+  downloaded: () => {
+    trackEvent('crop_file_downloaded', 'Crop');
   },
 
   // Editor cleared (new video)

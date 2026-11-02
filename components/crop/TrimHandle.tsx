@@ -79,11 +79,12 @@ export function TrimHandle({ position, percent, onDrag, timelineRef }: TrimHandl
     <div
       data-trim-handle
       data-testid={`trim-handle-${position}`}
-      className="absolute top-0 bottom-0 w-4 z-10 cursor-ew-resize group"
+      className="absolute top-0 bottom-0 w-4 z-10 cursor-ew-resize touch-none group"
+      // Inside the trim range: the timeline clips overflow, so a handle placed
+      // outside the range could not be grabbed at the start and end of a clip.
       style={{
         left: isStart ? `${percent}%` : 'auto',
         right: isStart ? 'auto' : `${100 - percent}%`,
-        transform: isStart ? 'translateX(-100%)' : 'translateX(100%)',
       }}
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
@@ -91,7 +92,7 @@ export function TrimHandle({ position, percent, onDrag, timelineRef }: TrimHandl
       {/* Handle visual */}
       <div
         className={`absolute top-0 bottom-0 w-2 bg-blue-500 flex items-center justify-center transition-colors group-hover:bg-blue-400 ${
-          isStart ? 'right-0 rounded-l' : 'left-0 rounded-r'
+          isStart ? 'left-0 rounded-l' : 'right-0 rounded-r'
         }`}
       >
         {/* Grip dots */}
@@ -102,12 +103,6 @@ export function TrimHandle({ position, percent, onDrag, timelineRef }: TrimHandl
         </div>
       </div>
 
-      {/* Extended hit area */}
-      <div
-        className={`absolute top-0 bottom-0 w-4 ${
-          isStart ? 'right-0' : 'left-0'
-        }`}
-      />
     </div>
   );
 }

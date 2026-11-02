@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useCropStore } from '@/lib/crop/useCropStore';
 import { cropToPixels } from '@/lib/crop/cropMath';
 import { getCropConversionService, CropOptions, TrimOptions } from '@/lib/crop/CropConversionService';
 import { trackCrop } from '@/lib/analytics';
+import { saveBlob } from '@/lib/download';
 import { Download, Loader2, X, CheckCircle } from 'lucide-react';
 
 type ExportState = 'idle' | 'converting' | 'done' | 'error';
@@ -13,7 +14,8 @@ export function ExportButton() {
   const [exportState, setExportState] = useState<ExportState>('idle');
   const [progress, setProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+  const [audioDropped, setAudioDropped] = useState(false);
+  const currentJobId = useRef<string | null>(null);
   const [downloadData, setDownloadData] = useState<{ buffer: ArrayBuffer; filename: string } | null>(null);
   const exportStartTime = useRef<number>(0);
 
@@ -34,10 +36,11 @@ export function ExportButton() {
     setProgress(0);
     setErrorMessage(null);
     setDownloadData(null);
+    setAudioDropped(false);
     exportStartTime.current = Date.now();
 
     // Track export started
-    trackCrop.exportStarted(file.name, !isFullFrame, !isFullDuration);
+    trackCrop.exportStarted(!isFullFrame, !isFullDuration);
 
     try {
       const service = getCropConversionService();
@@ -63,7 +66,7 @@ export function ExportButton() {
           }
         : undefined;
 
-      const jobId = await service.convertWithCrop(
+      const jobId = service.convertWithCrop(
         file,
         {
           preset: quality,
@@ -72,60 +75,55 @@ export function ExportButton() {
         },
         {
           onProgress: (p) => {
-            setProgress(p);
+            if (currentJobId.current === jobId) setProgress(p);
           },
+          onWarning: () => setAudioDropped(true),
           onError: (error) => {
+            if (currentJobId.current !== jobId) return;
+            currentJobId.current = null;
             setExportState('error');
             setErrorMessage(error);
-            // Track export failed
-            trackCrop.exportFailed(file.name, error);
+            trackCrop.exportFailed(error);
           },
           onComplete: (result) => {
+            if (currentJobId.current !== jobId) return;
+            currentJobId.current = null;
             setExportState('done');
             setProgress(1);
             setDownloadData(result);
-            // Track export completed
-            const processingTime = (Date.now() - exportStartTime.current) / 1000;
-            trackCrop.exportCompleted(file.name, processingTime);
+            trackCrop.exportCompleted((Date.now() - exportStartTime.current) / 1000);
           },
         }
       );
 
-      setCurrentJobId(jobId);
+      currentJobId.current = jobId;
     } catch (error) {
       setExportState('error');
       const errorMsg = error instanceof Error ? error.message : 'Export failed';
       setErrorMessage(errorMsg);
-      // Track export failed
-      trackCrop.exportFailed(file.name, errorMsg);
+      trackCrop.exportFailed(errorMsg);
     }
   }, [file, videoMeta, crop, trim, quality, isFullFrame, isFullDuration]);
 
   const handleCancel = useCallback(() => {
-    if (currentJobId) {
-      const service = getCropConversionService();
-      service.cancelConversion(currentJobId);
+    if (currentJobId.current) {
+      getCropConversionService().cancelConversion(currentJobId.current);
+      currentJobId.current = null;
     }
     setExportState('idle');
     setProgress(0);
-    setCurrentJobId(null);
-  }, [currentJobId]);
+  }, []);
+
+  // Stop working if the user leaves the editor mid-export.
+  useEffect(() => () => {
+    if (currentJobId.current) getCropConversionService().cancelConversion(currentJobId.current);
+  }, []);
 
   const handleDownload = useCallback(() => {
     if (!downloadData) return;
 
-    const blob = new Blob([downloadData.buffer], { type: 'video/mp4' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = downloadData.filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    // Track download
-    trackCrop.downloaded(downloadData.filename);
+    saveBlob(new Blob([downloadData.buffer], { type: 'video/mp4' }), downloadData.filename);
+    trackCrop.downloaded();
 
     // Reset state after download
     setExportState('idle');
@@ -138,7 +136,6 @@ export function ExportButton() {
     setProgress(0);
     setErrorMessage(null);
     setDownloadData(null);
-    setCurrentJobId(null);
   }, []);
 
   // Format progress percentage
@@ -213,6 +210,12 @@ export function ExportButton() {
           <CheckCircle className="w-6 h-6" />
           <span className="font-medium">Export complete!</span>
         </div>
+
+        {audioDropped && (
+          <p className="text-amber-400 text-sm text-center max-w-md" data-testid="audio-dropped-warning">
+            Your browser can&apos;t encode AAC audio, so this video has no sound.
+          </p>
+        )}
 
         <button
           onClick={handleDownload}

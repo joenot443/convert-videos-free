@@ -28,8 +28,8 @@ export interface CropConvertRequest {
 }
 
 export type CropConvertEvent =
-  | { type: 'ready'; jobId: string }
-  | { type: 'progress'; jobId: string; progress01: number; bytesWritten?: number }
+  | { type: 'progress'; jobId: string; progress01: number }
+  | { type: 'warning'; jobId: string; code: string }
   | { type: 'error'; jobId: string; message: string }
   | { type: 'done'; jobId: string; result: { buffer: ArrayBuffer; mime: string; filename: string } }
   | { type: 'canceled'; jobId: string };
@@ -38,32 +38,29 @@ export type CropProgressCallback = (progress: number) => void;
 export type CropErrorCallback = (error: string) => void;
 export type CropCompleteCallback = (result: { buffer: ArrayBuffer; filename: string }) => void;
 
+interface CropCallbacks {
+  onProgress?: CropProgressCallback;
+  onWarning?: (code: string) => void;
+  onError?: CropErrorCallback;
+  onCanceled?: () => void;
+  onComplete?: CropCompleteCallback;
+}
+
 export class CropConversionService {
   private worker: Worker | null = null;
-  private jobCallbacks: Map<string, {
-    onProgress?: CropProgressCallback;
-    onError?: CropErrorCallback;
-    onComplete?: CropCompleteCallback;
-  }> = new Map();
+  private jobCallbacks = new Map<string, CropCallbacks>();
   private jobIdCounter = 0;
 
-  constructor() {
-    this.initWorker();
-  }
-
-  private initWorker() {
-    if (typeof window === 'undefined') return;
-
-    try {
+  private getWorker(): Worker {
+    if (!this.worker) {
       this.worker = new Worker('/workers/crop-conversion.worker.js');
-      this.worker.addEventListener('message', this.handleWorkerMessage.bind(this));
-      this.worker.addEventListener('error', this.handleWorkerError.bind(this));
-    } catch (error) {
-      console.error('Failed to initialize crop conversion worker:', error);
+      this.worker.addEventListener('message', this.handleWorkerMessage);
+      this.worker.addEventListener('error', this.handleWorkerError);
     }
+    return this.worker;
   }
 
-  private handleWorkerMessage(event: MessageEvent<CropConvertEvent>) {
+  private handleWorkerMessage = (event: MessageEvent<CropConvertEvent>) => {
     const message = event.data;
     const callbacks = this.jobCallbacks.get(message.jobId);
     if (!callbacks) return;
@@ -72,57 +69,46 @@ export class CropConversionService {
       case 'progress':
         callbacks.onProgress?.(message.progress01);
         break;
-
+      case 'warning':
+        callbacks.onWarning?.(message.code);
+        break;
       case 'error':
+        this.jobCallbacks.delete(message.jobId);
         callbacks.onError?.(message.message);
-        this.jobCallbacks.delete(message.jobId);
         break;
-
       case 'done':
-        callbacks.onComplete?.({
-          buffer: message.result.buffer,
-          filename: message.result.filename,
-        });
         this.jobCallbacks.delete(message.jobId);
+        callbacks.onComplete?.({ buffer: message.result.buffer, filename: message.result.filename });
         break;
-
       case 'canceled':
-        callbacks.onError?.('Conversion was canceled');
         this.jobCallbacks.delete(message.jobId);
+        callbacks.onCanceled?.();
         break;
     }
-  }
+  };
 
-  private handleWorkerError(error: ErrorEvent) {
-    console.error('Worker error:', error);
-    this.jobCallbacks.forEach((callbacks) => {
-      callbacks.onError?.('Worker crashed: ' + error.message);
-    });
+  // Fires if the worker script fails to load or crashes, for example out of memory.
+  private handleWorkerError = (event: ErrorEvent) => {
+    console.error('Worker error:', event.message);
+    const orphaned = [...this.jobCallbacks.values()];
     this.jobCallbacks.clear();
-  }
+    this.worker?.terminate();
+    this.worker = null; // The next export starts a fresh worker.
+    orphaned.forEach((callbacks) =>
+      callbacks.onError?.('The exporter stopped unexpectedly. The file may be too large for this device.')
+    );
+  };
 
-  private generateJobId(): string {
-    return `crop-job-${++this.jobIdCounter}-${Date.now()}`;
-  }
-
-  public async convertWithCrop(
+  public convertWithCrop(
     file: File,
     options: {
       preset?: 'low' | 'medium' | 'high';
       crop?: CropOptions;
       trim?: TrimOptions;
-    } = {},
-    callbacks: {
-      onProgress?: CropProgressCallback;
-      onError?: CropErrorCallback;
-      onComplete?: CropCompleteCallback;
-    } = {}
-  ): Promise<string> {
-    if (!this.worker) {
-      throw new Error('Worker not initialized');
-    }
-
-    const jobId = this.generateJobId();
+    },
+    callbacks: CropCallbacks
+  ): string {
+    const jobId = `crop-job-${++this.jobIdCounter}-${Date.now()}`;
     this.jobCallbacks.set(jobId, callbacks);
 
     const request: CropConvertRequest = {
@@ -137,21 +123,12 @@ export class CropConversionService {
       trim: options.trim,
     };
 
-    this.worker.postMessage(request);
+    this.getWorker().postMessage(request);
     return jobId;
   }
 
   public cancelConversion(jobId: string) {
-    if (!this.worker) return;
-    this.worker.postMessage({ type: 'cancel', jobId });
-  }
-
-  public dispose() {
-    if (this.worker) {
-      this.worker.terminate();
-      this.worker = null;
-    }
-    this.jobCallbacks.clear();
+    this.worker?.postMessage({ type: 'cancel', jobId });
   }
 }
 

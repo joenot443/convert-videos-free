@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 
 interface FilmstripOptions {
   thumbnailCount?: number;
@@ -12,7 +12,6 @@ interface FilmstripResult {
   thumbnails: string[];
   isGenerating: boolean;
   error: string | null;
-  regenerate: () => void;
 }
 
 const DEFAULT_OPTIONS: Required<FilmstripOptions> = {
@@ -32,101 +31,84 @@ export function useFilmstrip(
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [regenerateKey, setRegenerateKey] = useState(0);
 
   const { thumbnailCount, thumbnailWidth, thumbnailHeight } = {
     ...DEFAULT_OPTIONS,
     ...options,
   };
 
-  const generateThumbnails = useCallback(async () => {
-    if (!videoUrl || duration <= 0) {
-      setThumbnails([]);
-      return;
-    }
+  useEffect(() => {
+    if (!videoUrl || !(duration > 0) || !Number.isFinite(duration)) return;
 
-    setIsGenerating(true);
-    setError(null);
+    let cancelled = false;
+    const video = document.createElement('video');
 
-    try {
-      // Create a temporary video element for seeking
-      const video = document.createElement('video');
-      video.src = videoUrl;
-      video.muted = true;
-      video.preload = 'metadata';
-
-      // Wait for metadata to load
-      await new Promise<void>((resolve, reject) => {
-        video.onloadedmetadata = () => resolve();
-        video.onerror = () => reject(new Error('Failed to load video'));
-        // Timeout after 10 seconds
-        setTimeout(() => reject(new Error('Video load timeout')), 10000);
+    // Resolves on the event, or after a timeout so that a stuck video can't
+    // hang the whole filmstrip.
+    const waitFor = (event: 'loadedmetadata' | 'seeked', timeoutMs: number) =>
+      new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error('Timed out reading video')), timeoutMs);
+        video.addEventListener(event, () => { clearTimeout(timer); resolve(); }, { once: true });
+        video.addEventListener('error', () => { clearTimeout(timer); reject(new Error('Failed to load video')); }, { once: true });
       });
 
-      const canvas = document.createElement('canvas');
-      canvas.width = thumbnailWidth;
-      canvas.height = thumbnailHeight;
-      const ctx = canvas.getContext('2d');
+    const generate = async () => {
+      setIsGenerating(true);
+      setError(null);
+      try {
+        video.muted = true;
+        video.preload = 'metadata';
+        const loaded = waitFor('loadedmetadata', 10000);
+        video.src = videoUrl;
+        await loaded;
 
-      if (!ctx) {
-        throw new Error('Could not get canvas context');
+        const canvas = document.createElement('canvas');
+        canvas.width = thumbnailWidth;
+        canvas.height = thumbnailHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('Could not get canvas context');
+
+        // Letterbox rather than stretch, because videos come in every shape.
+        const scale = Math.min(thumbnailWidth / video.videoWidth, thumbnailHeight / video.videoHeight);
+        const drawWidth = video.videoWidth * scale;
+        const drawHeight = video.videoHeight * scale;
+        const offsetX = (thumbnailWidth - drawWidth) / 2;
+        const offsetY = (thumbnailHeight - drawHeight) / 2;
+
+        const frames: string[] = [];
+        for (let i = 0; i < thumbnailCount && !cancelled; i++) {
+          const seeked = waitFor('seeked', 5000);
+          video.currentTime = (i * duration) / thumbnailCount;
+          await seeked;
+          ctx.fillStyle = '#000';
+          ctx.fillRect(0, 0, thumbnailWidth, thumbnailHeight);
+          ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight);
+          frames.push(canvas.toDataURL('image/jpeg', 0.6));
+        }
+        if (!cancelled) setThumbnails(frames);
+      } catch (err) {
+        if (cancelled) return;
+        // The filmstrip is a nicety: trimming still works without one.
+        console.warn('Could not generate filmstrip:', err);
+        setError(err instanceof Error ? err.message : 'Failed to generate thumbnails');
+        setThumbnails([]);
+      } finally {
+        if (!cancelled) setIsGenerating(false);
       }
+    };
 
-      const newThumbnails: string[] = [];
-      const interval = duration / thumbnailCount;
+    generate();
 
-      for (let i = 0; i < thumbnailCount; i++) {
-        const targetTime = i * interval;
-
-        // Seek to target time
-        video.currentTime = targetTime;
-
-        // Wait for seek to complete
-        await new Promise<void>((resolve) => {
-          const onSeeked = () => {
-            video.removeEventListener('seeked', onSeeked);
-            resolve();
-          };
-          video.addEventListener('seeked', onSeeked);
-        });
-
-        // Draw frame to canvas
-        ctx.drawImage(video, 0, 0, thumbnailWidth, thumbnailHeight);
-
-        // Convert to data URL
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-        newThumbnails.push(dataUrl);
-      }
-
-      setThumbnails(newThumbnails);
-
-      // Clean up
-      video.src = '';
-      video.load();
-    } catch (err) {
-      console.error('Error generating filmstrip:', err);
-      setError(err instanceof Error ? err.message : 'Failed to generate thumbnails');
-      setThumbnails([]);
-    } finally {
+    return () => {
+      cancelled = true;
       setIsGenerating(false);
-    }
+      setThumbnails([]);
+      video.removeAttribute('src');
+      video.load();
+    };
   }, [videoUrl, duration, thumbnailCount, thumbnailWidth, thumbnailHeight]);
 
-  // Generate thumbnails when video URL or duration changes
-  useEffect(() => {
-    generateThumbnails();
-  }, [generateThumbnails, regenerateKey]);
-
-  const regenerate = useCallback(() => {
-    setRegenerateKey((prev) => prev + 1);
-  }, []);
-
-  return {
-    thumbnails,
-    isGenerating,
-    error,
-    regenerate,
-  };
+  return { thumbnails, isGenerating, error };
 }
 
 /**

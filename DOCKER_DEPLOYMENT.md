@@ -1,102 +1,28 @@
-# Docker Deployment Guide
+# Deployment
 
-## Why Docker?
-
-Docker allows you to run this application on **any server**, regardless of the host's Node.js version. The container includes Node 20, so your server's Node version (even v16 or older) doesn't matter.
-
-## Prerequisites
-
-**On your server, you only need:**
-- Docker installed
-- Docker Compose (optional, but recommended)
-
-**You do NOT need:**
-- Node.js installed on the host
-- npm installed on the host
-- Any specific Ubuntu version
-
-## Building on the Server
-
-Since your server has Docker, you can build directly on the server:
+Production is one Docker container on a server shared with other services.
+nginx proxies `convertvideosfree.com` and `cropvideosfree.com` to it on
+`127.0.0.1:4444`, with Cloudflare in front.
 
 ```bash
-# 1. Copy your project files to the server (via git, scp, rsync, etc.)
-# 2. Navigate to the project directory
-cd ~/convert-videos-free
-
-# 3. Build the Docker image (this uses Node 20 INSIDE the container)
-docker build -t media-converter .
-
-# 4. Run the container
-docker run -d -p 4444:4444 --name media-converter --restart unless-stopped media-converter
+./deploy.sh              # build, copy over SSH, smoke-test, swap
+./deploy.sh --rollback   # return to the previous container
 ```
 
-## Using Docker Compose (Recommended)
+`deploy.sh` needs Docker running locally and SSH access to the server. The image
+is copied directly, so nothing is pushed to a registry.
+
+Do not run `docker system prune`, or stop all containers, on the server: other
+sites run there. The `~/convert-videos-free` checkout on the server is not used
+by deployments.
+
+## Before deploying
 
 ```bash
-# Build and start
-docker-compose up -d --build
+npm run typecheck && npm run lint
 
-# View logs
-docker-compose logs -f
-
-# Stop
-docker-compose down
-
-# Restart
-docker-compose restart
+# Against a production build, in real Chrome (needs ffmpeg):
+docker compose up --build -d
+./tests/generate-fixtures.sh
+E2E_BASE_URL=http://127.0.0.1:4444 E2E_PROD=1 npx playwright test
 ```
-
-## Building Locally and Transferring
-
-If you prefer to build on your local machine and transfer the image:
-
-### Option 1: Save/Load Image
-```bash
-# On your local machine (with Node 18+)
-docker build -t media-converter .
-docker save media-converter > media-converter.tar
-
-# Transfer the tar file to your server, then:
-docker load < media-converter.tar
-docker run -d -p 4444:4444 --name media-converter --restart unless-stopped media-converter
-```
-
-### Option 2: Use Docker Registry
-```bash
-# On your local machine
-docker build -t your-registry/media-converter:latest .
-docker push your-registry/media-converter:latest
-
-# On your server
-docker pull your-registry/media-converter:latest
-docker run -d -p 4444:4444 --name media-converter --restart unless-stopped your-registry/media-converter:latest
-```
-
-## Verifying It Works
-
-```bash
-# Check if container is running
-docker ps
-
-# Check logs
-docker logs media-converter
-
-# Test the application
-curl http://localhost:4444
-```
-
-## Troubleshooting
-
-### Build fails with "npm ci" errors
-The Dockerfile uses `npm install` which handles out-of-sync lock files. If you still have issues, you can regenerate the lock file locally and commit it.
-
-### Port already in use
-Change the port mapping: `-p 8080:4444` (maps host port 8080 to container port 4444)
-
-### Container exits immediately
-Check logs: `docker logs media-converter`
-
-## Key Point
-
-**The server's Node.js version doesn't matter!** Docker builds everything inside a container with Node 20, completely isolated from your host system.

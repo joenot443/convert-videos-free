@@ -6,21 +6,24 @@ import { Play, Pause, RotateCcw } from 'lucide-react';
 
 interface VideoCanvasProps {
   children?: React.ReactNode;
+  containerRef: React.RefObject<HTMLDivElement | null>;
 }
 
+const UNPLAYABLE_MESSAGE =
+  "Your browser can't preview this video, so it can't be cropped here. Try converting it to MP4 first at convertvideosfree.com.";
+
 export interface VideoCanvasHandle {
-  containerRef: React.RefObject<HTMLDivElement | null>;
   seek: (time: number) => void;
 }
 
 export const VideoCanvas = forwardRef<VideoCanvasHandle, VideoCanvasProps>(
-  function VideoCanvas({ children }, ref) {
+  function VideoCanvas({ children, containerRef }, ref) {
     const videoRef = useRef<HTMLVideoElement>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
 
     const {
       videoUrl,
       setVideoMeta,
+      rejectFile,
       isPlaying,
       setIsPlaying,
       currentTime,
@@ -37,24 +40,44 @@ export const VideoCanvas = forwardRef<VideoCanvasHandle, VideoCanvasProps>(
       setCurrentTime(time);
     }, [setCurrentTime]);
 
-    // Expose container ref and seek to parent
-    useImperativeHandle(ref, () => ({
-      containerRef,
-      seek,
-    }), [seek]);
+    // Expose seek to parent
+    useImperativeHandle(ref, () => ({ seek }), [seek]);
 
     // Handle video metadata loaded
     const handleLoadedMetadata = useCallback(() => {
       const video = videoRef.current;
       if (!video || !file) return;
 
-      setVideoMeta({
-        width: video.videoWidth,
-        height: video.videoHeight,
-        duration: video.duration,
-        filename: file.name,
-      });
-    }, [file, setVideoMeta]);
+      if (!video.videoWidth || !video.videoHeight) {
+        rejectFile(UNPLAYABLE_MESSAGE);
+        return;
+      }
+
+      const publish = () => {
+        setVideoMeta({
+          width: video.videoWidth,
+          height: video.videoHeight,
+          duration: video.duration,
+          filename: file.name,
+        });
+      };
+
+      if (Number.isFinite(video.duration)) {
+        publish();
+        return;
+      }
+
+      // Browser recordings are often WebM files with no duration in the header.
+      // Seeking past the end makes the browser work out the real one.
+      const onDurationChange = () => {
+        if (!Number.isFinite(video.duration)) return;
+        video.removeEventListener('durationchange', onDurationChange);
+        video.currentTime = 0;
+        publish();
+      };
+      video.addEventListener('durationchange', onDurationChange);
+      video.currentTime = Number.MAX_SAFE_INTEGER;
+    }, [file, rejectFile, setVideoMeta]);
 
     // Handle time update
     const handleTimeUpdate = useCallback(() => {
@@ -82,7 +105,7 @@ export const VideoCanvas = forwardRef<VideoCanvasHandle, VideoCanvasProps>(
         if (video.currentTime < trim.start || video.currentTime >= trim.end) {
           video.currentTime = trim.start;
         }
-        video.play();
+        video.play().catch(() => setIsPlaying(false));
         setIsPlaying(true);
       }
     }, [isPlaying, setIsPlaying, trim.start, trim.end]);
@@ -139,6 +162,7 @@ export const VideoCanvas = forwardRef<VideoCanvasHandle, VideoCanvasProps>(
             src={videoUrl}
             className="absolute inset-0 w-full h-full object-contain"
             onLoadedMetadata={handleLoadedMetadata}
+            onError={() => rejectFile(UNPLAYABLE_MESSAGE)}
             onTimeUpdate={handleTimeUpdate}
             playsInline
             muted={false}

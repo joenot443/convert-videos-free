@@ -7,10 +7,9 @@ import {
   ConversionSettings,
   ProgressInfo,
   CompletedFile,
-  QualityPreset,
-  ResolutionCap,
 } from './types';
 import { trackConversion, trackUI } from '../analytics';
+import { saveBlob } from '../download';
 
 interface ConverterStore {
   // Queue State
@@ -30,7 +29,7 @@ interface ConverterStore {
   completedFiles: CompletedFile[];
 
   // Actions - Queue Management
-  addFiles: (files: File[]) => void;
+  addFiles: (files: File[]) => { added: number; duplicates: string[] };
   removeFromQueue: (id: string) => void;
   clearQueue: () => void;
   moveInQueue: (id: string, direction: 'up' | 'down') => void;
@@ -42,14 +41,15 @@ interface ConverterStore {
 
   // Actions - Processing Control
   startProcessing: () => void;
+  stopProcessing: () => void;
   pauseProcessing: () => void;
   resumeProcessing: () => void;
-  cancelCurrent: () => void;
   retryFile: (id: string) => void;
 
   // Actions - Status Updates
   updateFileStatus: (id: string, status: FileStatus, error?: string) => void;
   updateProgress: (id: string, progress: ProgressInfo) => void;
+  setFileWarning: (id: string, warning: string) => void;
   setCurrentJob: (jobId: string | null) => void;
   completeFile: (id: string, blob: Blob, outputSize: number) => void;
 
@@ -85,28 +85,17 @@ export const useConverterStore = create<ConverterStore>((set, get) => ({
   addFiles: (files: File[]) => {
     const currentQueue = get().queue;
     const remainingSlots = MAX_QUEUE_SIZE - currentQueue.length;
+    const duplicates: string[] = [];
 
-    if (remainingSlots <= 0) {
-      console.warn('Queue is full. Maximum 10 files allowed.');
-      return;
-    }
-
-    const filesToAdd = files.slice(0, remainingSlots).filter(file => {
-      // Validate file size
-      if (file.size > MAX_FILE_SIZE) {
-        console.warn(`File ${file.name} exceeds 2GB limit`);
-        return false;
-      }
-      // Check for duplicates
+    const accepted = files.filter(file => {
+      if (file.size > MAX_FILE_SIZE) return false;
       const isDuplicate = currentQueue.some(item =>
         item.file.name === file.name && item.file.size === file.size
       );
-      if (isDuplicate) {
-        console.warn(`File ${file.name} already in queue`);
-        return false;
-      }
-      return true;
+      if (isDuplicate) duplicates.push(file.name);
+      return !isDuplicate;
     });
+    const filesToAdd = accepted.slice(0, Math.max(0, remainingSlots));
 
     const newItems: QueueItem[] = filesToAdd.map(file => ({
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -124,6 +113,8 @@ export const useConverterStore = create<ConverterStore>((set, get) => ({
     set(state => ({
       queue: [...state.queue, ...newItems],
     }));
+
+    return { added: newItems.length, duplicates };
   },
 
   removeFromQueue: (id: string) => {
@@ -131,7 +122,7 @@ export const useConverterStore = create<ConverterStore>((set, get) => ({
       // Track file removal
       const itemToRemove = state.queue.find(item => item.id === id);
       if (itemToRemove) {
-        trackUI.fileRemoved(itemToRemove.file.name);
+        trackUI.fileRemoved();
       }
 
       const newQueue = state.queue.filter(item => item.id !== id);
@@ -141,16 +132,10 @@ export const useConverterStore = create<ConverterStore>((set, get) => ({
       const newOverrides = new Map(state.fileOverrides);
       newOverrides.delete(id);
 
-      // Don't stop processing if there are still processing or pending items
-      const hasProcessing = newQueue.some(item => item.status === 'processing');
-      const hasPending = newQueue.some(item => item.status === 'pending');
-
       return {
         queue: newQueue,
         progress: newProgress,
         fileOverrides: newOverrides,
-        // Maintain isProcessing if there are still items that can be processed
-        isProcessing: state.isProcessing && (hasProcessing || hasPending),
       };
     });
   },
@@ -256,6 +241,10 @@ export const useConverterStore = create<ConverterStore>((set, get) => ({
     set({ isProcessing: true, isPaused: false });
   },
 
+  stopProcessing: () => {
+    set({ isProcessing: false, isPaused: false, currentJobId: null });
+  },
+
   pauseProcessing: () => {
     // Track processing paused
     trackUI.processingPaused();
@@ -270,29 +259,6 @@ export const useConverterStore = create<ConverterStore>((set, get) => ({
     set({ isPaused: false });
   },
 
-  cancelCurrent: () => {
-    const { currentJobId } = get();
-    if (!currentJobId) return;
-
-    set(state => {
-      const newQueue = state.queue.map(item =>
-        item.id === currentJobId
-          ? { ...item, status: 'cancelled' as FileStatus }
-          : item
-      );
-
-      // Check if there are more pending items
-      const hasPending = newQueue.some(item => item.status === 'pending');
-
-      return {
-        queue: newQueue,
-        currentJobId: null,
-        // Stop processing if no more pending items
-        isProcessing: hasPending ? state.isProcessing : false,
-      };
-    });
-  },
-
   retryFile: (id: string) => {
     set(state => {
       const newQueue = state.queue.map(item =>
@@ -301,6 +267,7 @@ export const useConverterStore = create<ConverterStore>((set, get) => ({
               ...item,
               status: 'pending' as FileStatus,
               error: undefined,
+              warning: undefined,
               startedAt: undefined,
               completedAt: undefined,
             }
@@ -331,18 +298,6 @@ export const useConverterStore = create<ConverterStore>((set, get) => ({
         return { ...item, ...updates };
       });
 
-      // If a file failed or was cancelled and it was the current job, clear current job
-      if ((status === 'failed' || status === 'cancelled') && state.currentJobId === id) {
-        const hasPending = newQueue.some(item => item.status === 'pending');
-        const hasProcessing = newQueue.some(item => item.status === 'processing');
-
-        return {
-          queue: newQueue,
-          currentJobId: hasProcessing ? state.currentJobId : null,
-          isProcessing: hasProcessing || (hasPending && state.isProcessing),
-        };
-      }
-
       return { queue: newQueue };
     });
   },
@@ -353,6 +308,12 @@ export const useConverterStore = create<ConverterStore>((set, get) => ({
       newProgress.set(id, progressInfo);
       return { progress: newProgress };
     });
+  },
+
+  setFileWarning: (id: string, warning: string) => {
+    set(state => ({
+      queue: state.queue.map(item => (item.id === id ? { ...item, warning } : item)),
+    }));
   },
 
   setCurrentJob: (jobId: string | null) => {
@@ -416,18 +377,8 @@ export const useConverterStore = create<ConverterStore>((set, get) => ({
 
     if (!file) return;
 
-    // Create download link
-    const url = URL.createObjectURL(file.blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = file.outputName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    // Track download event
-    trackConversion.downloaded(file.outputName);
+    saveBlob(file.blob, file.outputName);
+    trackConversion.downloaded();
 
     // Remove from queue if setting is enabled
     if (globalSettings.removeAfterDownload) {
@@ -437,9 +388,9 @@ export const useConverterStore = create<ConverterStore>((set, get) => ({
   },
 
   downloadAll: () => {
-    const { completedFiles } = get();
-    completedFiles.forEach(file => {
-      get().downloadFile(file.id);
+    // Browsers drop downloads that are triggered in the same tick.
+    get().completedFiles.forEach((file, index) => {
+      setTimeout(() => get().downloadFile(file.id), index * 300);
     });
   },
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useCallback, useState } from 'react';
+import Link from 'next/link';
 import { useCropStore } from '@/lib/crop/useCropStore';
 import { cropToPixels } from '@/lib/crop/cropMath';
 import { VideoDropZone } from './VideoDropZone';
@@ -13,6 +14,7 @@ import { X, RotateCcw, Crop, Scissors, Shield, Zap, Download, MonitorPlay, Chevr
 
 export function CropEditor() {
   const videoCanvasRef = useRef<VideoCanvasHandle>(null);
+  const videoContainerRef = useRef<HTMLDivElement>(null);
 
   const {
     file,
@@ -130,7 +132,7 @@ export function CropEditor() {
                 <StepCard
                   number="1"
                   title="Upload Your Video"
-                  description="Drag and drop or click to select any video file (MP4, MOV, WebM, MKV, AVI)"
+                  description="Drag and drop or click to select any video file (MP4, MOV, WebM, MKV)"
                 />
                 <StepCard
                   number="2"
@@ -169,7 +171,7 @@ export function CropEditor() {
                 <FeatureCard
                   icon={<Download className="w-6 h-6 text-orange-400" />}
                   title="High Quality Export"
-                  description="Export to MP4 with H.264 video and AAC audio. No quality loss, no watermarks added."
+                  description="Export to MP4 with H.264 video and AAC audio. No watermarks added."
                 />
               </div>
             </section>
@@ -203,7 +205,7 @@ export function CropEditor() {
                 />
                 <FAQItem
                   question="What video formats are supported?"
-                  answer="We support MP4, MOV, WebM, MKV, and AVI input files. All videos are exported as MP4 with H.264 video and AAC audio for maximum compatibility."
+                  answer="We support MP4, MOV, WebM, and MKV input files. All videos are exported as MP4 with H.264 video and AAC audio for maximum compatibility."
                 />
                 <FAQItem
                   question="Is there a file size limit?"
@@ -211,8 +213,31 @@ export function CropEditor() {
                 />
                 <FAQItem
                   question="Which browsers are supported?"
-                  answer="This tool works in Chrome 94+, Edge 94+, and Safari 16.4+. Firefox support is coming when WebCodecs becomes available."
+                  answer="This tool works in Chrome 94+, Edge 94+, and Safari 16.4+. Other browsers work if they can encode H.264 video."
                 />
+              </div>
+            </section>
+
+            {/* Tools We Love */}
+            <section className="border-t border-white/10 pt-8">
+              <h3 className="text-center text-lg font-semibold text-gray-200 mb-5">Tools We Love</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <a href="https://convertvideosfree.com" target="_blank" rel="noopener noreferrer" className="group p-3 rounded-lg hover:bg-white/5 transition-colors">
+                  <div className="font-medium text-gray-300 group-hover:text-purple-400">Convert Videos Free</div>
+                  <div className="text-xs text-gray-500">Convert video formats privately</div>
+                </a>
+                <a href="https://nottawa.app" target="_blank" rel="noopener noreferrer" className="group p-3 rounded-lg hover:bg-white/5 transition-colors">
+                  <div className="font-medium text-gray-300 group-hover:text-purple-400">Nottawa</div>
+                  <div className="text-xs text-gray-500">Live video for everyone</div>
+                </a>
+                <a href="https://www.hex2oklch.com" target="_blank" rel="noopener noreferrer" className="group p-3 rounded-lg hover:bg-white/5 transition-colors">
+                  <div className="font-medium text-gray-300 group-hover:text-purple-400">Hex to OKLCH</div>
+                  <div className="text-xs text-gray-500">Modern color format converter</div>
+                </a>
+                <a href="https://cropvideosfree.com" target="_blank" rel="noopener noreferrer" className="group p-3 rounded-lg hover:bg-white/5 transition-colors">
+                  <div className="font-medium text-gray-300 group-hover:text-purple-400">Crop Videos Free</div>
+                  <div className="text-xs text-gray-500">Crop & trim videos in your browser</div>
+                </a>
               </div>
             </section>
 
@@ -220,21 +245,21 @@ export function CropEditor() {
             <footer className="border-t border-white/10 pt-8">
               <div className="flex flex-col items-center space-y-4">
                 <nav className="flex flex-wrap items-center justify-center gap-6 text-sm">
-                  <a href="/" className="text-gray-400 hover:text-white transition-colors">
+                  <a href="https://convertvideosfree.com" className="text-gray-400 hover:text-white transition-colors">
                     Convert Videos
                   </a>
-                  <a href="/blog" className="text-gray-400 hover:text-white transition-colors">
+                  <Link href="/crop/blog" className="text-gray-400 hover:text-white transition-colors">
                     Blog
-                  </a>
-                  <a href="/about" className="text-gray-400 hover:text-white transition-colors">
+                  </Link>
+                  <Link href="/about" className="text-gray-400 hover:text-white transition-colors">
                     About
-                  </a>
-                  <a href="/privacy" className="text-gray-400 hover:text-white transition-colors">
+                  </Link>
+                  <Link href="/privacy" className="text-gray-400 hover:text-white transition-colors">
                     Privacy
-                  </a>
-                  <a href="/terms" className="text-gray-400 hover:text-white transition-colors">
+                  </Link>
+                  <Link href="/terms" className="text-gray-400 hover:text-white transition-colors">
                     Terms
-                  </a>
+                  </Link>
                 </nav>
 
                 <div className="flex flex-col sm:flex-row items-center gap-4 text-sm text-gray-400">
@@ -260,10 +285,8 @@ export function CropEditor() {
           // Editor when file is loaded
           <div className="py-6 space-y-6">
             {/* Video canvas with crop overlay */}
-            <VideoCanvas ref={videoCanvasRef}>
-              {videoMeta && videoCanvasRef.current?.containerRef && (
-                <CropOverlay containerRef={videoCanvasRef.current.containerRef} />
-              )}
+            <VideoCanvas ref={videoCanvasRef} containerRef={videoContainerRef}>
+              {videoMeta && <CropOverlay containerRef={videoContainerRef} />}
             </VideoCanvas>
 
             {/* Timeline with filmstrip and trim handles */}

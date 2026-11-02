@@ -20,7 +20,8 @@ const GoogleAdSense = ({
   useEffect(() => {
     try {
       // Push the ad to AdSense
-      ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
+      const slots = window as unknown as { adsbygoogle?: unknown[] };
+      (slots.adsbygoogle = slots.adsbygoogle || []).push({});
     } catch (error) {
       console.error("AdSense error:", error);
     }

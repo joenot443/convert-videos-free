@@ -10,9 +10,6 @@ A free, privacy-focused browser-based video conversion tool that converts variou
 - **Preserves Metadata**: Maintains orientation/rotation (especially for iPhone videos)
 - **Progress Tracking**: Real-time conversion progress display
 - **Quality Presets**: Choose between Low, Medium, and High quality
-- **Smart Download Handling**:
-  - Chrome/Edge: Stream directly to disk (for large files)
-  - Safari: In-memory conversion with automatic download
 
 ## Getting Started
 
@@ -48,18 +45,18 @@ npm start
 
 1. **Select a Video**: Click the upload area or drag and drop a video file
 2. **Choose Quality**: Select Low (2 Mbps), Medium (5 Mbps), or High (10 Mbps)
-3. **Streaming Option** (Chrome only): Enable to save directly to disk for large files
-4. **Convert**: Click "Convert to MP4" to start the conversion
-5. **Download**: File will automatically download when complete (or save location chosen if streaming)
+3. **Convert**: Click "Convert to MP4" to start the conversion
+4. **Download**: Save each file when it completes, or turn on auto-download
 
 ## Browser Compatibility
 
-| Browser | WebCodecs | Streaming Save | Notes |
-|---------|-----------|----------------|-------|
-| Chrome | ✅ | ✅ | Full support, recommended for large files |
-| Edge | ✅ | ✅ | Full support, recommended for large files |
-| Safari | ✅ | ❌ | Uses in-memory conversion, best for smaller files |
-| Firefox | ❌ | ❌ | Not supported (WebCodecs required) |
+| Browser | Notes |
+|---------|-------|
+| Chrome, Edge | Full support |
+| Safari 16.4+ | Supported. Versions without AAC encoding convert video only, and say so |
+| Other | Works wherever WebCodecs can encode H.264 |
+
+Conversion happens in memory, so the largest file that works depends on the device.
 
 ## Technical Details
 

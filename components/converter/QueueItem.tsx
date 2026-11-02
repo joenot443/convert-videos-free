@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { QueueItem as QueueItemType, ConversionSettings } from '@/lib/store/types';
+import { QueueItem as QueueItemType, ConversionSettings, ResolutionCap } from '@/lib/store/types';
 import { useConverterStore } from '@/lib/store/useConverterStore';
+import { ConversionQueueManager } from '@/lib/conversion/ConversionQueueManager';
+import { useDictionary } from '@/components/providers/DictionaryProvider';
 import { clsx } from 'clsx';
 import {
-  Play,
   CheckCircle,
   XCircle,
   StopCircle,
@@ -22,9 +23,10 @@ interface QueueItemProps {
 
 export function QueueItem({ item }: QueueItemProps) {
   const [showSettings, setShowSettings] = useState(false);
-  const [customSettings, setCustomSettings] = useState<Partial<ConversionSettings>>(
-    item.settings || {}
-  );
+  const override = useConverterStore(state => state.fileOverrides.get(item.id));
+  const [customSettings, setCustomSettings] = useState<Partial<ConversionSettings>>(override || {});
+  const { dictionary } = useDictionary();
+  const d = dictionary.item;
 
   const {
     removeFromQueue,
@@ -68,18 +70,23 @@ export function QueueItem({ item }: QueueItemProps) {
   const getStatusText = () => {
     switch (item.status) {
       case 'pending':
-        return 'Pending';
+        return d.pending;
       case 'processing':
-        return progressInfo ? `Processing ${progressInfo.percent.toFixed(0)}%` : 'Processing';
+        return progressInfo ? `${d.processing} ${progressInfo.percent.toFixed(0)}%` : d.processing;
       case 'completed':
-        return 'Complete';
+        return d.complete;
       case 'failed':
-        return 'Failed';
+        return d.failed;
       case 'cancelled':
-        return 'Cancelled';
+        return d.cancelled;
       default:
-        return 'Unknown';
+        return '';
     }
+  };
+
+  const handleRetry = () => {
+    retryFile(item.id);
+    ConversionQueueManager.getInstance().startProcessing();
   };
 
   const handleApplySettings = () => {
@@ -113,11 +120,11 @@ export function QueueItem({ item }: QueueItemProps) {
               </p>
               <p className="text-xs sm:text-sm text-gray-500">
                 {formatFileSize(item.file.size)}
-                {item.outputSize && (
+                {item.outputSize !== undefined && (
                   <span>
                     {' → '}
                     {formatFileSize(item.outputSize)}
-                    {item.compressionRatio && (
+                    {item.compressionRatio !== undefined && item.compressionRatio >= 1 && (
                       <span className="ml-2 text-green-600">
                         ↓{item.compressionRatio.toFixed(0)}%
                       </span>
@@ -125,9 +132,9 @@ export function QueueItem({ item }: QueueItemProps) {
                   </span>
                 )}
               </p>
-              {item.settings && (
-                <p className="text-xs text-gray-400">
-                  Custom: {item.settings.quality || globalSettings.quality} | {item.settings.resolution || globalSettings.resolution}
+              {override && (
+                <p className="text-xs text-gray-500">
+                  {d.custom}: {override.quality || globalSettings.quality} | {override.resolution || globalSettings.resolution}
                 </p>
               )}
             </div>
@@ -148,14 +155,14 @@ export function QueueItem({ item }: QueueItemProps) {
               {getStatusText()}
             </span>
 
-            {item.status === 'failed' && (
+            {(item.status === 'failed' || item.status === 'cancelled') && (
               <button
                 data-testid={`retry-${item.id}`}
-                onClick={() => retryFile(item.id)}
+                onClick={handleRetry}
                 className="inline-flex items-center gap-1 px-3 py-1.5 text-xs sm:text-sm bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-200 font-medium shadow-sm"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
-                Retry
+                {d.retry}
               </button>
             )}
 
@@ -165,7 +172,7 @@ export function QueueItem({ item }: QueueItemProps) {
                   data-testid={`settings-${item.id}`}
                   onClick={() => setShowSettings(!showSettings)}
                   className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Settings"
+                  title={d.settings}
                 >
                   <Settings className="w-4 h-4" />
                 </button>
@@ -173,7 +180,7 @@ export function QueueItem({ item }: QueueItemProps) {
                   data-testid={`remove-${item.id}`}
                   onClick={() => removeFromQueue(item.id)}
                   className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                  title="Remove"
+                  title={d.remove}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -202,28 +209,29 @@ export function QueueItem({ item }: QueueItemProps) {
               />
             </svg>
             <div className="flex justify-between text-xs text-gray-500">
-              <span>Time: {formatTime(progressInfo.timeElapsed)}</span>
+              <span>{d.elapsed}: {formatTime(progressInfo.timeElapsed)}</span>
               {progressInfo.estimatedTimeRemaining !== undefined && (
-                <span>Est: {formatTime(progressInfo.estimatedTimeRemaining)} remaining</span>
+                <span>{d.remaining}: {formatTime(progressInfo.estimatedTimeRemaining)}</span>
               )}
             </div>
-            {progressInfo.bytesProcessed > 0 && (
-              <p className="text-xs text-gray-500">
-                Processing: {formatFileSize(progressInfo.bytesProcessed)} / {formatFileSize(item.file.size)}
-              </p>
-            )}
           </div>
         )}
 
         {item.error && (
           <p className="text-sm text-red-600">
-            Error: {item.error}
+            {d.error}: {item.error}
+          </p>
+        )}
+
+        {item.warning === 'audioDropped' && (
+          <p data-testid={`warning-${item.id}`} className="text-sm text-amber-700">
+            {d.audioDropped}
           </p>
         )}
 
         {item.status === 'completed' && item.completedAt && item.startedAt && (
           <p className="text-xs text-gray-500">
-            Converted in {formatTime((item.completedAt.getTime() - item.startedAt.getTime()) / 1000)}
+            {dictionary.output.convertedIn} {formatTime((item.completedAt.getTime() - item.startedAt.getTime()) / 1000)}
           </p>
         )}
       </div>
@@ -232,7 +240,7 @@ export function QueueItem({ item }: QueueItemProps) {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-800">Custom Settings</h3>
+              <h3 className="text-lg font-semibold text-gray-800">{d.customSettings}</h3>
               <button
                 onClick={() => setShowSettings(false)}
                 className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
@@ -250,23 +258,25 @@ export function QueueItem({ item }: QueueItemProps) {
                   type="checkbox"
                   checked={Object.keys(customSettings).length > 0}
                   onChange={(e) => {
-                    if (!e.target.checked) {
-                      setCustomSettings({});
-                    }
+                    setCustomSettings(
+                      e.target.checked
+                        ? { quality: globalSettings.quality, resolution: globalSettings.resolution }
+                        : {}
+                    );
                   }}
                 />
-                <span>Use custom settings for this file</span>
+                <span>{d.useCustomSettings}</span>
               </label>
 
               {Object.keys(customSettings).length > 0 && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium mb-2">Quality:</label>
+                    <label className="block text-sm font-medium mb-2">{dictionary.settings.videoQuality}:</label>
                     <div className="space-x-2">
-                      {['low', 'medium', 'high'].map(quality => (
+                      {(['low', 'medium', 'high'] as const).map(quality => (
                         <button
                           key={quality}
-                          onClick={() => setCustomSettings({ ...customSettings, quality: quality as any })}
+                          onClick={() => setCustomSettings({ ...customSettings, quality })}
                           className={clsx(
                             'px-3 py-1 rounded text-sm',
                             customSettings.quality === quality
@@ -274,20 +284,20 @@ export function QueueItem({ item }: QueueItemProps) {
                               : 'bg-gray-100 text-gray-700'
                           )}
                         >
-                          {quality.charAt(0).toUpperCase() + quality.slice(1)}
+                          {dictionary.settings[quality]}
                         </button>
                       ))}
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">Resolution:</label>
+                    <label className="block text-sm font-medium mb-2">{dictionary.settings.maxResolution}:</label>
                     <select
                       value={customSettings.resolution || globalSettings.resolution}
-                      onChange={(e) => setCustomSettings({ ...customSettings, resolution: e.target.value as any })}
+                      onChange={(e) => setCustomSettings({ ...customSettings, resolution: e.target.value as ResolutionCap })}
                       className="w-full px-3 py-2 border rounded"
                     >
-                      <option value="original">Original</option>
+                      <option value="original">{dictionary.settings.original}</option>
                       <option value="1080p">1080p</option>
                       <option value="720p">720p</option>
                       <option value="480p">480p</option>
@@ -301,13 +311,13 @@ export function QueueItem({ item }: QueueItemProps) {
                   onClick={() => setShowSettings(false)}
                   className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-medium"
                 >
-                  Cancel
+                  {d.cancel}
                 </button>
                 <button
                   onClick={handleApplySettings}
                   className="px-4 py-2 text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-medium shadow-sm"
                 >
-                  Apply Settings
+                  {d.applySettings}
                 </button>
               </div>
             </div>
